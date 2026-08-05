@@ -1,37 +1,70 @@
-# MacZoeker - Network Device Discovery Tool
+# MacZoeker - Global Mac Studio Availability Scanner
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![AI Powered](https://img.shields.io/badge/AI-Powered-blue.svg)](https://www.anthropic.com)
+[![Daily Reports](https://img.shields.io/badge/Reports-Daily-green.svg)]()
 
-**MacZoeker** is een krachtige netwerkscan-tool die automatisch apparaten in je lokale netwerk detecteert en identificeert. Het systeem scant regelmatig je netwerk, houdt wijzigingen bij en kan je waarschuwen wanneer nieuwe of onbekende apparaten worden gedetecteerd.
+**MacZoeker** is een geavanceerde wereldwijde beschikbaarheids-scanner voor Mac Studio computers. Het systeem doorzoekt dagelijks 30+ landen naar beschikbare voorraad bij webshops en marktplaatsen, verifieert beschikbaarheid met AI en stuurt gedetailleerde rapporten per e-mail.
 
-![MacZoeker Dashboard](https://via.placeholder.com/800x400/0078d7/ffffff?text=MacZoeker+Dashboard) *Voorbeeld van het MacZoeker dashboard*
+🌍 **30+ landen** | 🛒 **Webshops & marktplaatsen** | 🤖 **AI-verificatie** | 📧 **Dagelijkse rapportage**
 
-## 🚀 Features
+![MacZoeker Dashboard](https://via.placeholder.com/800x400/0078d7/ffffff?text=MacZoeker+Dashboard) *Voorbeeld van het MacZoeker dashboard met wereldwijde beschikbaarheid*
 
-✅ **Automatische netwerkscans** - Regelmatige scans van je lokale netwerk
-✅ **Apparaatdetectie** - Identificeert apparaten op basis van MAC-adressen en hostnamen
-✅ **Wijzigingsdetectie** - Houdt bij wanneer apparaten verschijnen of verdwijnen
-✅ **Webinterface** - Gebruiksvriendelijke dashboard om apparaten te bekijken
-✅ **Rapportage** - Gedetailleerde rapporten van netwerkactiviteit
-✅ **Waarschuwingen** - Optionele e-mailmeldingen bij nieuwe apparaten
-✅ **Multi-platform** - Werkt op Windows, Linux en macOS via WSL
+## 🚀 Wat maakt MacZoeker uniek?
 
-## 📋 Systeemvereisten
+✅ **Wereldwijde dekking** - Zoekt in 30+ landen naar Mac Studio's via DuckDuckGo
+✅ **AI-gedreven verificatie** - Gebruikt Claude Sonnet 4.6 om beschikbaarheid te controleren
+✅ **Dagelijkse rapportage** - Ontvang automatisch e-mails met nieuwe aanbiedingen
+✅ **Prijsvergelijking** - Vergelijkt prijzen met officiële Apple adviesprijzen
+✅ **Land mismatch detectie** - Identificeert importmogelijkheden (bijv. US → EU)
+✅ **Marktplaatsondersteuning** - Doorzoekt zowel officiële winkels als particuliere marktplaatsen
+✅ **Automatische valuta conversie** - Alle prijzen worden omgerekend naar EUR voor vergelijking
+✅ **Slimme filtering** - Blokkeert nieuwsites, forums en andere niet-relevante bronnen
 
-- **Besturingssysteem**: Windows 10/11 met WSL2, Linux of macOS
-- **Python**: 3.8+ (voor backend)
-- **Node.js**: 16+ (voor frontend)
-- **Netwerk**: Lokale netwerktoegang
+## 🌍 Landendekking
+
+MacZoeker doorzoekt dagelijks de volgende landen:
+
+**Europa**: Nederland, België, Duitsland, Frankrijk, Spanje, Italië, Verenigd Koninkrijk, Oostenrijk, Ierland, Portugal, Finland, Luxemburg, Zwitserland, Zweden, Denemarken, Polen, Noorwegen, Tsjechië, Hongarije, Roemenië, Slowakije, Slovenië, Kroatië, Bulgarije, Estland, Letland, Litouwen, Malta, Cyprus
+
+**Wereldwijd**: Verenigde Arabische Emiraten, Verenigde Staten, Canada, Australië, Singapore, Japan, Hong Kong, Nieuw-Zeeland
+
+## 🤖 Hoe werkt het?
+
+1. **Zoeken**: MacZoeker gebruikt DuckDuckGo om landspecifiek te zoeken naar Mac Studio aanbiedingen
+2. **Scrapen**: Productpagina's worden gedownload en geanalyseerd
+3. **AI-verificatie**: Claude Sonnet 4.6 controleert of de Mac Studio daadwerkelijk beschikbaar is
+4. **Prijsanalyse**: Prijzen worden vergeleken met officiële Apple adviesprijzen
+5. **Rapportage**: Dagelijks e-mailrapport met alle gevonden aanbiedingen
+6. **Dashboard**: Webinterface om historische data en trends te bekijken
+
+## 📊 Rapportage features
+
+- **Bevestigde beschikbaarheid**: Aanbiedingen die geverifieerd beschikbaar zijn
+- **Onduidelijke beschikbaarheid**: Aanbiedingen die handmatige controle vereisen
+- **Land mismatches**: Producten die vanuit een ander land worden verzonden
+- **Prijsvergelijking**: Huidige prijs vs. Apple adviesprijs
+- **Marktconformiteit**: Scherp geprijsd, marktconform of boven marktprijs
+- **Levertijd informatie**: Wanneer wordt het product geleverd?
+- **Verkopertypes**: Officiële winkels vs. particuliere marktplaatsen
 
 ## 🛠️ Installatie
 
-### 1. Repository clonen
+### Vereisten
+- Python 3.8+ (voor backend)
+- Node.js 16+ (voor frontend)
+- WSL2 (voor Windows gebruikers)
+- GitHub account (voor AI API toegang)
+
+### Stappen
+
+1. **Repository clonen**
 ```bash
 git clone https://github.com/mfidder2026/MacZoeker.git
 cd MacZoeker
 ```
 
-### 2. Backend installeren
+2. **Backend installeren**
 ```bash
 cd backend
 python3 -m venv .venv
@@ -40,22 +73,23 @@ source .venv/bin/activate  # Linux/macOS/WSL
 pip install -r requirements.txt
 ```
 
-### 3. Frontend installeren
+3. **Frontend installeren**
 ```bash
 cd ../frontend
 yarn install
 ```
 
-### 4. Configuratie
-Kopieer de voorbeeldconfiguratiebestanden:
+4. **Configuratie**
 ```bash
+# Kopieer voorbeeldconfiguratiebestanden
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
+
+# Configureer je instellingen in backend/.env
+# Voeg je Anthropic API sleutel toe voor AI-verificatie
 ```
 
-Pas de `.env` bestanden aan met je eigen instellingen.
-
-### 5. Services starten
+5. **Services starten**
 ```bash
 # Voor Linux/macOS/WSL
 ./reboot.sh
@@ -67,11 +101,41 @@ cd ../frontend
 start.sh
 ```
 
+## ⚙️ Configuratie
+
+### Backend (.env)
+```ini
+# AI configuratie (verplicht voor beschikbaarheidsverificatie)
+ANTHROPIC_API_KEY=your_api_key_here
+
+# Scan instellingen
+SCAN_INTERVAL_HOURS=24
+MAX_RESULTS_PER_QUERY=10
+INCLUDE_MARKETPLACES=true
+
+# E-mail meldingen
+EMAIL_ENABLED=true
+SMTP_SERVER=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=user@example.com
+SMTP_PASSWORD=yourpassword
+EMAIL_FROM=noreply@maczoeker.example.com
+EMAIL_TO=your@email.com
+
+# Landen en zoektermen (kan aangepast worden)
+ENABLED_COUNTRIES=NL,BE,DE,FR,GB,US
+```
+
+### Frontend (.env)
+```ini
+REACT_APP_BACKEND_URL=http://localhost:8001
+```
+
 ## 🖥️ Gebruik
 
 Na het starten van de services kun je MacZoeker benaderen via:
 
-- **Frontend**: http://localhost:3000
+- **Frontend dashboard**: http://localhost:3000
 - **Backend API**: http://localhost:8001
 
 ### Belangrijke commando's
@@ -86,46 +150,49 @@ cd backend && ./start.sh
 cd frontend && ./start.sh
 ```
 
-## 📊 Dashboard Overzicht
+## 📈 Dashboard Overzicht
 
 Het MacZoeker dashboard biedt:
-- **Realtime netwerkstatus** - Huidige apparaten in je netwerk
+- **Realtime beschikbaarheid** - Huidige Mac Studio aanbiedingen wereldwijd
 - **Scan geschiedenis** - Overzicht van eerdere scans
-- **Wijzigingsdetectie** - Nieuwe en verdwenen apparaten
+- **Prijsontwikkeling** - Trends in Mac Studio prijzen
+- **Landanalyse** - Waar zijn Mac Studio's beschikbaar?
 - **Rapport generatie** - Exporteerbare rapporten
-- **Instellingen** - Configureer scanintervallen en meldingen
+- **Instellingen** - Configureer scanparameters en meldingen
 
-## 🔧 Configuratieopties
+## 📬 Voorbeeld e-mailrapport
 
-### Backend (.env)
-```
-# Scan instellingen
-SCAN_INTERVAL_MINUTES=60
-NETWORK_INTERFACE=eth0
+Dagelijks ontvang je een e-mail met:
+- Totaal aantal gevonden aanbiedingen
+- Bevestigd beschikbare Mac Studio's
+- Onduidelijke beschikbaarheid (handmatige controle nodig)
+- Land mismatches (mogelijke importkansen)
+- Prijsvergelijking met Apple adviesprijzen
+- Directe links naar de aanbiedingen
 
-# E-mail meldingen
-EMAIL_ENABLED=true
-SMTP_SERVER=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=user@example.com
-SMTP_PASSWORD=yourpassword
-EMAIL_FROM=noreply@maczoeker.example.com
-EMAIL_TO=admin@example.com
-```
+![Voorbeeld e-mail](https://via.placeholder.com/600x400/f0f0f0/333333?text=MacZoeker+Email+Report) *Voorbeeld van een MacZoeker e-mailrapport*
 
-### Frontend (.env)
-```
-REACT_APP_BACKEND_URL=http://localhost:8001
-```
+## 🔧 Geavanceerde opties
 
-## 📬 Meldingen
+### Landen aanpassen
+Je kunt landen toevoegen, verwijderen of uitschakelen in de configuratie. Elk land heeft:
+- Landcode (bijv. NL, BE, DE)
+- Zoekterm (bijv. "Mac Studio kopen M3")
+- Valuta (voor prijsconversie)
+- Taalinstellingen (voor lokale zoekresultaten)
 
-MacZoeker kan e-mailmeldingen sturen wanneer:
-- Nieuwe apparaten worden gedetecteerd
-- Bekende apparaten verdwijnen uit het netwerk
-- Er wijzigingen zijn in het netwerk
+### AI-verificatie
+MacZoeker gebruikt Claude Sonnet 4.6 om:
+- Beschikbaarheid te verifiëren
+- Productconfiguraties te controleren
+- Valse positieve resultaten te filteren
+- Leveringsvoorwaarden te analyseren
 
-Configureer de SMTP-instellingen in het `.env` bestand van de backend.
+### Marktplaatsfilter
+Je kunt kiezen om:
+- Alleen officiële winkels te doorzoeken
+- Ook particuliere marktplaatsen (eBay, Marktplaats, etc.) mee te nemen
+- Specifieke marktplaatsen uit te sluiten
 
 ## 🤝 Bijdragen
 
@@ -148,4 +215,4 @@ Voor vragen of ondersteuning:
 - Neem contact op via GitHub
 
 ---
-💡 **Tip**: MacZoeker werkt het beste in combinatie met WSL2 op Windows voor optimale netwerkscanmogelijkheden!
+💡 **Tip**: MacZoeker werkt het beste met een geldige Anthropic API sleutel voor AI-verificatie van beschikbaarheid. Zonder API sleutel werkt de scanner alleen in beperkte modus.
