@@ -1,0 +1,18 @@
+.App {
+  min-height: 100vh;
+}
+
+::selection {
+  background: #f1f5f9;
+  color: #09090b;
+}
+
+body {
+  background: #09090b;
+}
+
+/* dunne scrollbar in donkere stijl */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
