@@ -248,20 +248,34 @@ if [ ! -d "node_modules" ]; then
     echo -e "  ${GREEN}✅ Dependencies geïnstalleerd.${NC}"
 fi
 
-# Bouw de productie-bundle (geoptimaliseerd, geen dev warnings)
-echo "  📦 Productie-bundle bouwen..."
-if command -v yarn &>/dev/null; then
-    yarn build > /tmp/maczoeker-frontend-build.log 2>&1
-else
-    npm run build > /tmp/maczoeker-frontend-build.log 2>&1
+# Bouw de productie-bundle alleen als nodig (--rebuild flag of eerste keer)
+FORCE_REBUILD=false
+if [ "${1:-}" = "--rebuild" ]; then
+    FORCE_REBUILD=true
 fi
 
-if [ ! -f "build/index.html" ]; then
-    echo -e "  ${RED}❌ Build mislukt — bekijk /tmp/maczoeker-frontend-build.log${NC}"
-    kill_port 8001 "Backend"
-    exit 1
+if [ "$FORCE_REBUILD" = true ] || [ ! -f "build/index.html" ]; then
+    if [ "$FORCE_REBUILD" = true ]; then
+        echo "  📦 Productie-bundle opnieuw bouwen (--rebuild)..."
+    else
+        echo "  📦 Productie-bundle bouwen (eerste keer)..."
+    fi
+    if command -v yarn &>/dev/null; then
+        yarn build > /tmp/maczoeker-frontend-build.log 2>&1
+    else
+        npm run build > /tmp/maczoeker-frontend-build.log 2>&1
+    fi
+
+    if [ ! -f "build/index.html" ]; then
+        echo -e "  ${RED}❌ Build mislukt — bekijk /tmp/maczoeker-frontend-build.log${NC}"
+        kill_port 8001 "Backend"
+        exit 1
+    fi
+    echo -e "  ${CHECK_MARK} Productie-bundle gebouwd ($(du -sh build | cut -f1))"
+else
+    echo -e "  ${CHECK_MARK} Productie-bundle bestaat al ($(du -sh build | cut -f1)) — build overgeslagen"
+    echo "     Gebruik './reboot.sh --rebuild' om opnieuw te bouwen na code-wijzigingen."
 fi
-echo -e "  ${CHECK_MARK} Productie-bundle gebouwd ($(du -sh build | cut -f1))"
 
 echo -e "  ${GREEN}🚀 Frontend (productie) starten op http://localhost:3000${NC}"
 echo ""
