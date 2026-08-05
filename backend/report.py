@@ -135,7 +135,7 @@ def build_email_html(listings, stats, settings, run_date):
         # Gebruik advertentie_url indien beschikbaar
         link_url = l.get("advertentie_url") or l.get("url", "#")
         
-        rows += f"""<tr style="border-bottom:1px solid #27272a;{'background:#fef3c7;' if land_mismatch else ''}">
+        rows += f"""<tr style="border-bottom:1px solid #27272a;{'background:#fbbf24;color:#1f2937;' if land_mismatch else ''}">
         <td style="padding:12px 10px;font-size:13px;color:#fff;">
             <div style="font-weight:600;">{l.get('chip','?')} · {l.get('ram','')}/{l.get('opslag','')}</div>
             <div style="margin-top:2px;">{conditie_badge}</div>
