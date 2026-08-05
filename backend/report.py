@@ -177,17 +177,46 @@ def build_email_html(listings, stats, settings, run_date):
     footer = """<div style="margin-top:20px;padding-top:16px;border-top:1px solid #27272a;">
     <p style="color:#64748b;font-size:12px;margin:0 0 8px;">
         <strong>Legenda:</strong><br>
-        <span style="color:#34d399;">Bevestigd</span> = geverifieerd bestelbaar · 
+        <span style="color:#34d399;">Bevestigd</span> = geverifieerd bestelbaar ·
         <span style="color:#fbbf24;">Onduidelijk</span> = controleer de advertentie<br>
         ⚠️ = verzendland verschilt van zoekland (mogelijk import)
     </p>
     <p style="color:#4b5563;font-size:11px;margin:0;">
-        Automatisch gegenereerd door de Mac Studio Beschikbaarheid Zoeker · 
+        Automatisch gegenereerd door de Mac Studio Beschikbaarheid Zoeker ·
         Alle prijzen in EUR · Data kan afwijken van werkelijke prijzen
     </p>
     </div>"""
     
-    return subject, head + summary + table + footer + "</div></div>"
+    # ---- Geblokkeerde websites sectie ----
+    blocked_section = ""
+    blocked_urls = stats.get("blocked_urls", [])
+    if blocked_urls:
+        blocked_rows = ""
+        for b in blocked_urls:
+            blocked_rows += f"""<tr style="border-bottom:1px solid #27272a;">
+            <td style="padding:10px 12px;font-size:13px;color:#cbd5e1;">
+                <a href="{b['url']}" style="color:#60a5fa;text-decoration:none;">{b['domain']}</a>
+            </td>
+            <td style="padding:10px 12px;font-size:12px;color:#94a3b8;">{b.get('reason', 'Onbekend')}</td>
+            <td style="padding:10px 12px;font-size:12px;">
+                <a href="{b['url']}" style="color:#60a5fa;text-decoration:none;" target="_blank">🔗 Open →</a>
+            </td>
+            </tr>"""
+        blocked_section = f"""<div style="margin-top:20px;padding:16px;background:#18181b;border:1px solid #27272a;border-radius:10px;">
+        <h3 style="font-size:16px;color:#fb7185;margin:0 0 12px;font-weight:600;">🚫 Geblokkeerde websites ({len(blocked_urls)})</h3>
+        <p style="color:#94a3b8;font-size:12px;margin:0 0 12px;">
+            Deze websites konden niet automatisch worden doorzocht vanwege anti-bot beveiliging, netwerkfouten of onvoldoende content.
+            Klik op de links om handmatig te zoeken.
+        </p>
+        <table style="width:100%;border-collapse:collapse;background:#121214;border:1px solid #27272a;border-radius:8px;overflow:hidden;">
+        <thead><tr style="background:#0f0f11;">
+        <th style="padding:10px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Website</th>
+        <th style="padding:10px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Reden</th>
+        <th style="padding:10px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Handmatig zoeken</th>
+        </tr></thead><tbody>{blocked_rows}</tbody></table>
+        </div>"""
+    
+    return subject, head + summary + table + footer + blocked_section + "</div></div>"
 
 
 def send_email(subject, html, recipient, cfg=None):

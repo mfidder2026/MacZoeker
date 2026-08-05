@@ -51,6 +51,63 @@ function Badge({ text, className }) {
   );
 }
 
+function BlockedWebsites({ blockedUrls }) {
+  if (!blockedUrls || !blockedUrls.length) return null;
+  return (
+    <div className="border border-[#27272a] bg-[#121214]">
+      <div className="px-5 py-4 border-b border-[#27272a] flex items-center gap-2.5">
+        <span className="text-lg">🚫</span>
+        <span className="uppercase tracking-[0.15em] text-[11px] font-semibold text-rose-400">
+          Geblokkeerde websites ({blockedUrls.length})
+        </span>
+      </div>
+      <div className="p-4">
+        <p className="text-sm text-slate-500 mb-4">
+          Deze websites konden niet automatisch worden doorzocht. Klik op de links om handmatig te zoeken.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#27272a] bg-[#0f0f11]">
+                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-400">Website</th>
+                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-400">Reden</th>
+                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-400">Handmatig zoeken</th>
+              </tr>
+            </thead>
+            <tbody>
+              {blockedUrls.map((b, i) => (
+                <tr key={i} className="border-b border-[#1c1c1f] hover:bg-[#18181b] transition-colors">
+                  <td className="px-4 py-3">
+                    <a
+                      href={b.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      {b.domain}
+                    </a>
+                  </td>
+                  <td className="px-4 py-3 text-slate-400">{b.reason || "Onbekend"}</td>
+                  <td className="px-4 py-3">
+                    <a
+                      href={b.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
+                    >
+                      Open <ArrowSquareOut size={14} />
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ListingsTable({ listings }) {
   if (!listings.length) {
     return (
@@ -854,6 +911,8 @@ export default function Dashboard() {
         </div>
 
         <ListingsTable listings={filtered} />
+
+        <BlockedWebsites blockedUrls={data.stats?.blocked_urls} />
 
         <ScanHistory runs={runs} />
       </main>

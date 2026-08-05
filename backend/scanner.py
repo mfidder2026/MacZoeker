@@ -1943,7 +1943,8 @@ async def perform_scan(db, settings: dict, run_id: str):
     """Voert een volledige scan uit, streamt live voortgang en slaat listings op."""
     log_lines = []
     stats = {"candidates": 0, "analyzed": 0, "available": 0, "excluded": 0,
-             "blocked": 0, "errors": 0, "duplicates_removed": 0, "country_mismatch": 0}
+             "blocked": 0, "errors": 0, "duplicates_removed": 0, "country_mismatch": 0,
+             "blocked_urls": []}
     reference_prices = settings.get("reference_prices", REFERENCE_PRICES)
     max_per_query = settings.get("max_results_per_query", 10)
     max_pages = settings.get("max_pages_per_run", 200)
@@ -2024,13 +2025,16 @@ async def perform_scan(db, settings: dict, run_id: str):
             # Gedetailleerde logging voor waarom pagina's worden overgeslagen
             if status == "error":
                 stats["errors"] += 1
+                stats["blocked_urls"].append({"url": url, "domain": domain, "reason": "Netwerkfout/timeout"})
                 log(f"❌ FOUT — {domain}: Kan pagina niet ophalen (netwerkfout/timeouts)")
                 continue
             if status in ("blocked", "empty"):
                 stats["blocked"] += 1
                 if status == "blocked":
+                    stats["blocked_urls"].append({"url": url, "domain": domain, "reason": "Anti-bot bescherming (Cloudflare/Incapsula/etc.)"})
                     log(f"🚫 GEBLOKKEERD — {domain}: Anti-bot bescherming (Cloudflare/Incapsula/etc.) — Playwright fallback mislukt")
                 else:
+                    stats["blocked_urls"].append({"url": url, "domain": domain, "reason": "Onvoldoende content (<200 tekens)"})
                     log(f"🚫 LEEG — {domain}: Pagina werd geladen maar had onvoldoende content (<200 tekens)")
                 continue
             
