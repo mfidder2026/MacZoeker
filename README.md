@@ -1,19 +1,19 @@
 # MacZoeker - Global Mac Studio Availability Scanner
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![AI Powered](https://img.shields.io/badge/AI-Powered-blue.svg)](https://www.anthropic.com)
+[![AI Powered](https://img.shields.io/badge/AI-Powered-blue.svg)](https://github.com/openai)
 [![Daily Reports](https://img.shields.io/badge/Reports-Daily-green.svg)]()
 
 **MacZoeker** is een geavanceerde wereldwijde beschikbaarheids-scanner voor Mac Studio computers. Het systeem doorzoekt dagelijks 30+ landen naar beschikbare voorraad bij webshops en marktplaatsen, verifieert beschikbaarheid met AI en stuurt gedetailleerde rapporten per e-mail.
 
-🌍 **30+ landen** | 🛒 **Webshops & marktplaatsen** | 🤖 **AI-verificatie** | 📧 **Dagelijkse rapportage**
+🌍 **30+ landen** | 🛒 **Webshops & marktplaatsen** | 🤖 **AI-verificatie** | 💰 **Kostenefficiënt** | 📧 **Dagelijkke rapportage**
 
 ![MacZoeker Dashboard](https://via.placeholder.com/800x400/0078d7/ffffff?text=MacZoeker+Dashboard) *Voorbeeld van het MacZoeker dashboard met wereldwijde beschikbaarheid*
 
 ## 🚀 Wat maakt MacZoeker uniek?
 
 ✅ **Wereldwijde dekking** - Zoekt in 30+ landen naar Mac Studio's via DuckDuckGo
-✅ **AI-gedreven verificatie** - Gebruikt Claude Sonnet 4.6 om beschikbaarheid te controleren
+✅ **AI-gedreven verificatie** - Gebruikt OpenAI-compatible AI (Claude, LM Studio, Ollama, etc.) om beschikbaarheid kostenefficiënt te controleren
 ✅ **Dagelijkse rapportage** - Ontvang automatisch e-mails met nieuwe aanbiedingen
 ✅ **Prijsvergelijking** - Vergelijkt prijzen met officiële Apple adviesprijzen
 ✅ **Land mismatch detectie** - Identificeert importmogelijkheden (bijv. US → EU)
@@ -33,7 +33,7 @@ MacZoeker doorzoekt dagelijks de volgende landen:
 
 1. **Zoeken**: MacZoeker gebruikt DuckDuckGo om landspecifiek te zoeken naar Mac Studio aanbiedingen
 2. **Scrapen**: Productpagina's worden gedownload en geanalyseerd
-3. **AI-verificatie**: Claude Sonnet 4.6 controleert of de Mac Studio daadwerkelijk beschikbaar is
+3. **AI-verificatie**: OpenAI-compatible AI (Claude, LM Studio, Ollama, etc.) controleert of de Mac Studio daadwerkelijk beschikbaar is
 4. **Prijsanalyse**: Prijzen worden vergeleken met officiële Apple adviesprijzen
 5. **Rapportage**: Dagelijks e-mailrapport met alle gevonden aanbiedingen
 6. **Dashboard**: Webinterface om historische data en trends te bekijken
@@ -105,8 +105,13 @@ start.sh
 
 ### Backend (.env)
 ```ini
-# AI configuratie (verplicht voor beschikbaarheidsverificatie)
+# AI configuratie (kies één van de opties)
+# Optie 1: Anthropic Claude (betaald)
 ANTHROPIC_API_KEY=your_api_key_here
+
+# Optie 2: OpenAI-compatible API (bijv. LM Studio, Ollama)
+OPENAI_API_KEY=sk-1234567890  # Kan willekeurig zijn voor lokale servers
+OPENAI_API_BASE=http://localhost:1234/v1  # URL van je lokale AI server
 
 # Scan instellingen
 SCAN_INTERVAL_HOURS=24
@@ -181,12 +186,18 @@ Je kunt landen toevoegen, verwijderen of uitschakelen in de configuratie. Elk la
 - Valuta (voor prijsconversie)
 - Taalinstellingen (voor lokale zoekresultaten)
 
-### AI-verificatie
-MacZoeker gebruikt Claude Sonnet 4.6 om:
-- Beschikbaarheid te verifiëren
-- Productconfiguraties te controleren
-- Valse positieve resultaten te filteren
-- Leveringsvoorwaarden te analyseren
+### AI-configuratie
+MacZoeker ondersteunt OpenAI-compatible AI agents:
+- **Claude Sonnet** (standaard, vereist API sleutel)
+- **LM Studio** (lokaal, gratis, geen API kosten)
+- **Ollama** (lokaal, gratis, geen API kosten)
+- **Andere OpenAI-compatible API's**
+
+De AI wordt gebruikt voor:
+- Beschikbaarheid verifiëren
+- Productconfiguraties controleren
+- Valse positieve resultaten filteren
+- Leveringsvoorwaarden analyseren
 
 ### Marktplaatsfilter
 Je kunt kiezen om:
@@ -214,5 +225,29 @@ Voor vragen of ondersteuning:
 - Open een issue in deze repository
 - Neem contact op via GitHub
 
+## 🤖 Lokale AI-instellingen
+
+Voor kostenefficiënte AI-verificatie kun je lokale AI-servers gebruiken:
+
+### LM Studio
+1. Download en installeer LM Studio van [lmstudio.ai](https://lmstudio.ai)
+2. Kies een geschikt model (bijv. llama3, mistral, etc.)
+3. Start de lokale server op `http://localhost:1234`
+4. Configureer in `.env`:
+```ini
+OPENAI_API_KEY=sk-1234567890
+OPENAI_API_BASE=http://localhost:1234/v1
+```
+
+### Ollama
+1. Installeer Ollama van [ollama.ai](https://ollama.ai)
+2. Download een model: `ollama pull llama3`
+3. Start de server: `ollama serve`
+4. Configureer in `.env`:
+```ini
+OPENAI_API_KEY=ollama
+OPENAI_API_BASE=http://localhost:11434/v1
+```
+
 ---
-💡 **Tip**: MacZoeker werkt het beste met een geldige Anthropic API sleutel voor AI-verificatie van beschikbaarheid. Zonder API sleutel werkt de scanner alleen in beperkte modus.
+💡 **Tip**: MacZoeker werkt het beste met een OpenAI-compatible AI voor beschikbaarheidsverificatie. Voor kostenefficiëntie kun je lokale AI-servers zoals LM Studio of Ollama gebruiken.
