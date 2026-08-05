@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node / Frontend
+node_modules/
+frontend/build/
+
+# Environment files (contain secrets)
+backend/.env
+backend/.env-old
+frontend/.env
+
+# Logs
+*.log
+frontend/frontend-start.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

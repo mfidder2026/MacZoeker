@@ -283,7 +283,7 @@ function SettingsDialog({ settings, onSaved }) {
           <div>
             <Label className="text-sm uppercase tracking-[0.15em] text-slate-400 font-semibold">E-mailverzending (SMTP)</Label>
             <p className="text-sm text-slate-500 mt-2 mb-3">
-              Vul de gegevens van je bestaande muzabv.nl-mailbox in om het rapport écht te versturen.
+              Vul je SMTP-gegevens in om het dagelijkse rapport per e-mail te versturen.
               {form.smtp_password_set && (
                 <span className="text-emerald-400 block mt-1">Wachtwoord is opgeslagen — laat leeg om te behouden.</span>
               )}
@@ -293,7 +293,7 @@ function SettingsDialog({ settings, onSaved }) {
                 <Label className="text-sm text-slate-400">SMTP-server</Label>
                 <Input
                   data-testid="input-smtp-host"
-                  placeholder="smtp.muzabv.nl"
+                  placeholder="smtp.example.com"
                   className="mt-2 bg-[#09090b] border-[#27272a] text-white text-base h-10"
                   value={form.smtp_host || ""}
                   onChange={(e) => setForm({ ...form, smtp_host: e.target.value })}
@@ -313,7 +313,7 @@ function SettingsDialog({ settings, onSaved }) {
                 <Label className="text-sm text-slate-400">Gebruikersnaam (e-mail)</Label>
                 <Input
                   data-testid="input-smtp-user"
-                  placeholder="jij@muzabv.nl"
+                  placeholder="jij@example.com"
                   className="mt-2 bg-[#09090b] border-[#27272a] text-white text-base h-10"
                   value={form.smtp_user || ""}
                   onChange={(e) => setForm({ ...form, smtp_user: e.target.value })}
@@ -334,7 +334,7 @@ function SettingsDialog({ settings, onSaved }) {
                 <Label className="text-sm text-slate-400">Afzender (optioneel, standaard = gebruikersnaam)</Label>
                 <Input
                   data-testid="input-smtp-from"
-                  placeholder="Mac Studio Zoeker <jij@muzabv.nl>"
+                  placeholder="Mac Studio Zoeker <jij@example.com>"
                   className="mt-2 bg-[#09090b] border-[#27272a] text-white text-base h-10"
                   value={form.smtp_from || ""}
                   onChange={(e) => setForm({ ...form, smtp_from: e.target.value })}

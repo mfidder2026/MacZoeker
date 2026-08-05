@@ -54,14 +54,14 @@ def test_put_smtp_password_and_preserve_on_empty(s):
     r = s.put(f"{API}/settings", json={
         "smtp_host": "smtp.invalid.example.com",
         "smtp_port": "587",
-        "smtp_user": "test@muzabv.nl",
-        "smtp_from": "test@muzabv.nl",
+        "smtp_user": "test@example.com",
+        "smtp_from": "test@example.com",
         "smtp_password": "supersecret123",
     })
     assert r.status_code == 200
     d = r.json()
     assert d["smtp_host"] == "smtp.invalid.example.com"
-    assert d["smtp_user"] == "test@muzabv.nl"
+    assert d["smtp_user"] == "test@example.com"
     assert d["smtp_password"] == ""  # masked
     assert d["smtp_password_set"] is True
 
@@ -72,11 +72,11 @@ def test_put_smtp_password_and_preserve_on_empty(s):
     assert g["smtp_host"] == "smtp.invalid.example.com"
 
     # 3) PUT with empty password should PRESERVE
-    r2 = s.put(f"{API}/settings", json={"smtp_password": "", "smtp_user": "test2@muzabv.nl"})
+    r2 = s.put(f"{API}/settings", json={"smtp_password": "", "smtp_user": "test2@example.com"})
     assert r2.status_code == 200
     d2 = r2.json()
     assert d2["smtp_password_set"] is True, "empty password must preserve existing"
-    assert d2["smtp_user"] == "test2@muzabv.nl"
+    assert d2["smtp_user"] == "test2@example.com"
 
     # 4) GET again → still set
     g2 = s.get(f"{API}/settings").json()

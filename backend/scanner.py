@@ -99,7 +99,7 @@ DEFAULT_COUNTRIES = [
 DEFAULT_SETTINGS = {
     "id": "global",
     "config_version": 6,
-    "recipient_email": "mfidder@muzabv.nl",
+    "recipient_email": "",
     "send_time": "08:00",
     "timezone": "Europe/Amsterdam",
     "chip_variants": ["M1 Max", "M1 Ultra", "M2 Max", "M2 Ultra", "M3 Ultra",

@@ -63,7 +63,7 @@ def test_get_settings(s):
     r = s.get(f"{API}/settings")
     assert r.status_code == 200
     data = r.json()
-    assert data.get("recipient_email") == "mfidder@muzabv.nl"
+    assert "recipient_email" in data
     assert "send_time" in data
     assert isinstance(data.get("countries"), list) and len(data["countries"]) > 0
 
@@ -125,7 +125,7 @@ def test_latest_report(s):
     body = r.json()
     assert body.get("subject")
     assert body.get("html")
-    assert body.get("recipient") == "mfidder@muzabv.nl"
+    assert "recipient" in body
     assert isinstance(body.get("sent"), bool)
     # send_reason is present when not sent; may be empty when sent successfully
     assert "send_reason" in body
