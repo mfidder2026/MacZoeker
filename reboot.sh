@@ -148,7 +148,7 @@ if [ ! -f ".env" ]; then
         cat > .env <<'ENVEOF'
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=mac_studio_zoeker
-CORS_ORIGINS=*
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=qwen2.5:14b-instruct-q5_K_M
@@ -172,12 +172,14 @@ if [ ! -d ".venv" ]; then
     echo -e "  ${GREEN}✅ Virtuele omgeving aangemaakt.${NC}"
 fi
 
-echo -e "  ${GREEN}🚀 Backend starten op http://0.0.0.0:8001${NC}"
+# BACKEND_HOST=0.0.0.0 alleen gebruiken met API_TOKEN in .env (bereikbaar vanaf het netwerk).
+BACKEND_HOST="${BACKEND_HOST:-127.0.0.1}"
+echo -e "  ${GREEN}🚀 Backend starten op http://$BACKEND_HOST:8001${NC}"
 echo "     API: http://localhost:8001/api/"
 echo ""
 
 # Start backend met expliciet pad naar venv (geen 'source' nodig — robuuster)
-.venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8001 --reload \
+.venv/bin/python -m uvicorn server:app --host "$BACKEND_HOST" --port 8001 --reload \
     > /tmp/maczoeker-backend.log 2>&1 &
 BACKEND_PID=$!
 echo "  Backend PID: $BACKEND_PID"

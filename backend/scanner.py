@@ -41,69 +41,71 @@ FX_TO_EUR = {
     "NZD": 0.66,
 }
 
+# Chips die echt in een Mac Studio zitten (2022: M1, 2023: M2, 2025: M4 Max/M3 Ultra,
+# 2026: M5). Een M3 Max of M4 Ultra Mac Studio bestaat niet; Pro/basis-chips zijn Mac mini's.
+VALID_STUDIO_CHIPS = ("M1 Max", "M1 Ultra", "M2 Max", "M2 Ultra", "M3 Ultra",
+                      "M4 Max", "M5 Max", "M5 Ultra")
+
 # Officiële Apple-adviesprijzen (EUR, bij benadering) per basis-chip.
 REFERENCE_PRICES = {
     "M1 Max": 2299,
     "M1 Ultra": 4599,
     "M2 Max": 2599,
     "M2 Ultra": 4999,
-    "M3 Max": 2699,
     "M3 Ultra": 4999,
     "M4 Max": 2599,
-    "M4 Ultra": 5199,
     "M5 Max": 2799,
     "M5 Ultra": 5299,
 }
 
 DEFAULT_COUNTRIES = [
-    # M3-specific search terms toegevoegd voor betere dekking
-    {"code": "NL", "name": "Nederland", "term": "Mac Studio kopen M3", "currency": "EUR", "enabled": True},
-    {"code": "BE", "name": "België", "term": "Mac Studio kopen M3", "currency": "EUR", "enabled": True},
-    {"code": "DE", "name": "Duitsland", "term": "Mac Studio kaufen M3", "currency": "EUR", "enabled": True},
-    {"code": "FR", "name": "Frankrijk", "term": "acheter Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "ES", "name": "Spanje", "term": "comprar Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "IT", "name": "Italië", "term": "comprare Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "GB", "name": "Verenigd Koninkrijk", "term": "buy Mac Studio M3", "currency": "GBP", "enabled": True},
-    {"code": "AT", "name": "Oostenrijk", "term": "Mac Studio kaufen M3", "currency": "EUR", "enabled": True},
-    {"code": "IE", "name": "Ierland", "term": "buy Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "PT", "name": "Portugal", "term": "comprar Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "FI", "name": "Finland", "term": "osta Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "LU", "name": "Luxemburg", "term": "acheter Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "CH", "name": "Zwitserland", "term": "Mac Studio kaufen M3", "currency": "CHF", "enabled": True},
-    {"code": "SE", "name": "Zweden", "term": "köpa Mac Studio M3", "currency": "SEK", "enabled": True},
-    {"code": "DK", "name": "Denemarken", "term": "køb Mac Studio M3", "currency": "DKK", "enabled": True},
-    {"code": "PL", "name": "Polen", "term": "kup Mac Studio M3", "currency": "PLN", "enabled": True},
-    {"code": "NO", "name": "Noorwegen", "term": "kjøp Mac Studio M3", "currency": "NOK", "enabled": True},
-    {"code": "AE", "name": "VAE (UAE)", "term": "buy Mac Studio Dubai M3", "currency": "AED", "enabled": True},
-    {"code": "US", "name": "Verenigde Staten", "term": "buy Mac Studio M3", "currency": "USD", "enabled": True},
-    {"code": "CA", "name": "Canada", "term": "buy Mac Studio M3", "currency": "CAD", "enabled": True},
-    {"code": "AU", "name": "Australië", "term": "buy Mac Studio M3", "currency": "AUD", "enabled": True},
-    {"code": "SG", "name": "Singapore", "term": "buy Mac Studio M3", "currency": "SGD", "enabled": True},
-    {"code": "JP", "name": "Japan", "term": "Mac Studio M3 を購入", "currency": "JPY", "enabled": True},
-    {"code": "HK", "name": "Hong Kong", "term": "buy Mac Studio M3", "currency": "HKD", "enabled": True},
-    {"code": "NZ", "name": "Nieuw-Zeeland", "term": "buy Mac Studio M3", "currency": "NZD", "enabled": True},
-    {"code": "CZ", "name": "Tsjechië", "term": "kup Mac Studio M3", "currency": "CZK", "enabled": True},
-    {"code": "HU", "name": "Hongarije", "term": "vegye meg a Mac Studiot M3", "currency": "HUF", "enabled": True},
-    {"code": "RO", "name": "Roemenië", "term": "cumpăra Mac Studio M3", "currency": "RON", "enabled": True},
-    {"code": "SK", "name": "Slowakije", "term": "kúpiť Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "SI", "name": "Slovenië", "term": "kupite Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "HR", "name": "Kroatië", "term": "kupite Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "BG", "name": "Bulgarije", "term": "купете Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "EE", "name": "Estland", "term": "osta Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "LV", "name": "Letland", "term": "iegādāties Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "LT", "name": "Litouwen", "term": "pirkti Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "MT", "name": "Malta", "term": "buy Mac Studio M3", "currency": "EUR", "enabled": True},
-    {"code": "CY", "name": "Cyprus", "term": "buy Mac Studio M3", "currency": "EUR", "enabled": True},
+    # Basis-zoekterm per land; chip-specifieke varianten worden in search_terms() toegevoegd.
+    {"code": "NL", "name": "Nederland", "term": "Mac Studio kopen", "currency": "EUR", "enabled": True},
+    {"code": "BE", "name": "België", "term": "Mac Studio kopen", "currency": "EUR", "enabled": True},
+    {"code": "DE", "name": "Duitsland", "term": "Mac Studio kaufen", "currency": "EUR", "enabled": True},
+    {"code": "FR", "name": "Frankrijk", "term": "acheter Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "ES", "name": "Spanje", "term": "comprar Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "IT", "name": "Italië", "term": "comprare Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "GB", "name": "Verenigd Koninkrijk", "term": "buy Mac Studio", "currency": "GBP", "enabled": True},
+    {"code": "AT", "name": "Oostenrijk", "term": "Mac Studio kaufen", "currency": "EUR", "enabled": True},
+    {"code": "IE", "name": "Ierland", "term": "buy Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "PT", "name": "Portugal", "term": "comprar Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "FI", "name": "Finland", "term": "osta Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "LU", "name": "Luxemburg", "term": "acheter Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "CH", "name": "Zwitserland", "term": "Mac Studio kaufen", "currency": "CHF", "enabled": True},
+    {"code": "SE", "name": "Zweden", "term": "köpa Mac Studio", "currency": "SEK", "enabled": True},
+    {"code": "DK", "name": "Denemarken", "term": "køb Mac Studio", "currency": "DKK", "enabled": True},
+    {"code": "PL", "name": "Polen", "term": "kup Mac Studio", "currency": "PLN", "enabled": True},
+    {"code": "NO", "name": "Noorwegen", "term": "kjøp Mac Studio", "currency": "NOK", "enabled": True},
+    {"code": "AE", "name": "VAE (UAE)", "term": "buy Mac Studio Dubai", "currency": "AED", "enabled": True},
+    {"code": "US", "name": "Verenigde Staten", "term": "buy Mac Studio", "currency": "USD", "enabled": True},
+    {"code": "CA", "name": "Canada", "term": "buy Mac Studio", "currency": "CAD", "enabled": True},
+    {"code": "AU", "name": "Australië", "term": "buy Mac Studio", "currency": "AUD", "enabled": True},
+    {"code": "SG", "name": "Singapore", "term": "buy Mac Studio", "currency": "SGD", "enabled": True},
+    {"code": "JP", "name": "Japan", "term": "Mac Studio 購入", "currency": "JPY", "enabled": True},
+    {"code": "HK", "name": "Hong Kong", "term": "buy Mac Studio", "currency": "HKD", "enabled": True},
+    {"code": "NZ", "name": "Nieuw-Zeeland", "term": "buy Mac Studio", "currency": "NZD", "enabled": True},
+    {"code": "CZ", "name": "Tsjechië", "term": "kup Mac Studio", "currency": "CZK", "enabled": True},
+    {"code": "HU", "name": "Hongarije", "term": "vegye meg a Mac Studiot", "currency": "HUF", "enabled": True},
+    {"code": "RO", "name": "Roemenië", "term": "cumpăra Mac Studio", "currency": "RON", "enabled": True},
+    {"code": "SK", "name": "Slowakije", "term": "kúpiť Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "SI", "name": "Slovenië", "term": "kupite Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "HR", "name": "Kroatië", "term": "kupite Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "BG", "name": "Bulgarije", "term": "купете Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "EE", "name": "Estland", "term": "osta Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "LV", "name": "Letland", "term": "iegādāties Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "LT", "name": "Litouwen", "term": "pirkti Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "MT", "name": "Malta", "term": "buy Mac Studio", "currency": "EUR", "enabled": True},
+    {"code": "CY", "name": "Cyprus", "term": "buy Mac Studio", "currency": "EUR", "enabled": True},
 ]
 
 DEFAULT_SETTINGS = {
     "id": "global",
-    "config_version": 6,
+    "config_version": 7,
     "recipient_email": "",
     "send_time": "08:00",
     "timezone": "Europe/Amsterdam",
-    "chip_variants": ["M1 Max", "M1 Ultra", "M2 Max", "M2 Ultra", "M3 Ultra",
-                      "M3 Max", "M3 Ultra", "M4 Max", "M4 Ultra", "M5 Max", "M5 Ultra"],
+    "chip_variants": list(VALID_STUDIO_CHIPS),
     "max_results_per_query": 10,
     "max_pages_per_run": 200,
     "include_marketplaces": True,
@@ -673,13 +675,31 @@ async def ddg_html_search(client: httpx.AsyncClient, query: str, max_results: in
     return urls
 
 
+_CHIP_TOKEN_RE = re.compile(r"\s*\bM\s?[1-9](?:\s*(?:Max|Ultra|Pro))?\b", re.I)
+
+
+def search_terms(term):
+    """Zoektermen per land: de basisterm zonder chip (oude instellingen bevatten nog 'M3')
+    plus varianten voor de huidige generaties, zodat niet alleen M3-resultaten komen."""
+    base = re.sub(r"\s+", " ", _CHIP_TOKEN_RE.sub("", term or "")).strip() or "Mac Studio"
+    return [base, f"{base} M5", f"{base} M4 Max M3 Ultra"]
+
+
 async def search_urls(client, country, term, max_results, include_marketplaces):
-    """Landspecifieke zoekopdracht met filtering van ruis-domeinen."""
+    """Landspecifieke zoekopdrachten met filtering van ruis-domeinen."""
     region = REGION_MAP.get(country["code"], "wt-wt")
-    urls = await asyncio.to_thread(_ddgs_search, term, region, max_results)
-    if not urls:
-        urls = await ddg_html_search(client, term, max_results)
-    return [u for u in urls if _is_useful(u, include_marketplaces)]
+    urls, seen = [], set()
+    for i, q in enumerate(search_terms(term)):
+        if i:
+            await asyncio.sleep(1.0)  # DuckDuckGo niet te snel achter elkaar bevragen
+        found = await asyncio.to_thread(_ddgs_search, q, region, max_results)
+        if not found:
+            found = await ddg_html_search(client, q, max_results)
+        for u in found:
+            if u not in seen and _is_useful(u, include_marketplaces):
+                seen.add(u)
+                urls.append(u)
+    return urls
 
 
 def _parse_html(html: str, base_url: str = ""):
@@ -688,6 +708,7 @@ def _parse_html(html: str, base_url: str = ""):
     Geeft naast titel en zichtbare tekst ook de (absolute) links op de pagina terug,
     zodat de LLM een echte productlink kan kiezen in plaats van er een te verzinnen."""
     soup = BeautifulSoup(html, "html.parser")
+    offers = _extract_structured_offers(soup)
     for tag in soup(["script", "style", "noscript", "svg"]):
         tag.decompose()
     title = soup.title.string.strip() if soup.title and soup.title.string else ""
@@ -701,7 +722,127 @@ def _parse_html(html: str, base_url: str = ""):
         seen.add(href)
         links.append({"url": href, "text": re.sub(r"\s+", " ", a.get_text(" ")).strip()[:120]})
     text = re.sub(r"\s+", " ", soup.get_text(" ")).strip()
-    return {"title": title, "text": text[:12000], "links": links}
+    return {"title": title, "text": text[:MAX_PAGE_TEXT], "links": links, "offers": offers}
+
+
+# Hoeveel zichtbare tekst we per pagina bewaren (voor prijscontrole) en naar de LLM sturen.
+MAX_PAGE_TEXT = 150_000
+PROMPT_TEXT_LIMIT = 12_000
+
+
+def _to_float(value):
+    """'2.399,00' / '2,399.00' / '2399' / 2399 → 2399.0 (of None)."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    v = re.sub(r"[^\d.,]", "", value)
+    if not v:
+        return None
+    if "," in v and "." in v:
+        dec = "," if v.rfind(",") > v.rfind(".") else "."
+        v = v.replace("." if dec == "," else ",", "").replace(dec, ".")
+    elif "," in v:
+        head, _, tail = v.rpartition(",")
+        v = head.replace(",", "") + ("." + tail if len(tail) != 3 else tail)
+    elif v.count(".") > 1 or (v.count(".") == 1 and len(v.rpartition(".")[2]) == 3):
+        v = v.replace(".", "")
+    try:
+        return float(v)
+    except ValueError:
+        return None
+
+
+def _iter_jsonld(node):
+    if isinstance(node, list):
+        for x in node:
+            yield from _iter_jsonld(x)
+    elif isinstance(node, dict):
+        yield node
+        for key in ("@graph", "itemListElement", "item", "mainEntity"):
+            if key in node:
+                yield from _iter_jsonld(node[key])
+
+
+def _extract_structured_offers(soup, limit=20):
+    """Lees schema.org Product/Offer-data (JSON-LD) en product:price-meta tags.
+
+    Dit is door de winkel zelf opgegeven prijs/voorraad en daarmee veel betrouwbaarder dan
+    wat een LLM uit de losse paginatekst haalt."""
+    offers = []
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string or tag.get_text() or "")
+        except (ValueError, TypeError):
+            continue
+        for node in _iter_jsonld(data):
+            types = node.get("@type")
+            types = types if isinstance(types, list) else [types]
+            if "Product" not in types:
+                continue
+            name = str(node.get("name") or "")[:200]
+            raw_offers = node.get("offers")
+            for o in (raw_offers if isinstance(raw_offers, list) else [raw_offers]):
+                if not isinstance(o, dict):
+                    continue
+                spec = o.get("priceSpecification")
+                spec = spec[0] if isinstance(spec, list) and spec else spec
+                price = (o.get("price") or o.get("lowPrice")
+                         or (spec.get("price") if isinstance(spec, dict) else None))
+                currency = (o.get("priceCurrency")
+                            or (spec.get("priceCurrency") if isinstance(spec, dict) else None))
+                availability = str(o.get("availability") or "").rsplit("/", 1)[-1]
+                offers.append({
+                    "name": name,
+                    "price": _to_float(price),
+                    "currency": (currency or "").upper() or None,
+                    "availability": availability or None,
+                    "url": o.get("url") if isinstance(o.get("url"), str) else node.get("url"),
+                })
+                if len(offers) >= limit:
+                    return offers
+    amount = soup.find("meta", attrs={"property": re.compile(r"^(product|og):price:amount$")})
+    if amount and amount.get("content") and not offers:
+        cur = soup.find("meta", attrs={"property": re.compile(r"^(product|og):price:currency$")})
+        title = soup.find("meta", attrs={"property": "og:title"})
+        offers.append({
+            "name": (title.get("content") if title else "")[:200],
+            "price": _to_float(amount["content"]),
+            "currency": (cur.get("content") or "").upper() if cur else None,
+            "availability": None,
+            "url": None,
+        })
+    return offers
+
+
+def _mentions_mac_studio(page):
+    """Komt 'Mac Studio' voor in titel, tekst of productdata? Zo niet: geen LLM-aanroep."""
+    hay = " ".join([page.get("title") or "", page.get("text") or ""]
+                   + [o.get("name") or "" for o in page.get("offers") or []]).lower()
+    return "mac studio" in hay or "macstudio" in hay
+
+
+def _relevant_text(text, limit=PROMPT_TEXT_LIMIT, window=700):
+    """Stuur bij lange pagina's het begin plus de stukken rond 'Mac Studio' naar de LLM,
+    in plaats van blind de eerste 12.000 tekens (waar vaak alleen menu's staan)."""
+    if len(text) <= limit:
+        return text
+    head = text[:1500]
+    spans = []
+    for m in re.finditer(r"mac\s?studio", text, re.I):
+        a, b = max(1500, m.start() - window), min(len(text), m.end() + window)
+        if spans and a <= spans[-1][1]:
+            spans[-1][1] = max(spans[-1][1], b)
+        else:
+            spans.append([a, b])
+    out, used = [head], len(head)
+    for a, b in spans:
+        if used >= limit:
+            break
+        chunk = text[a:min(b, a + limit - used)]
+        out.append(chunk)
+        used += len(chunk) + 5
+    return " … ".join(out)
 
 
 # Zinnen die op een anti-bot/challenge-pagina wijzen. Bewust specifiek: generieke woorden als
@@ -1666,7 +1807,8 @@ def _resolve_listing_url(candidate, page_url, page_links):
     return candidate if candidate.rstrip("/") in known else page_url
 
 
-def _build_prompt(text, title, url, country_name, is_marketplace=False, max_items=1, links=None):
+def _build_prompt(text, title, url, country_name, is_marketplace=False, max_items=1, links=None,
+                  offers=None):
     # Geef de echte productlinks van de pagina mee, zodat de LLM er een kan kiezen
     potential_links = _candidate_product_links(links)
     links_context = ""
@@ -1679,6 +1821,17 @@ Productlinks die op deze pagina staan (kies advertentie_url UITSLUITEND uit deze
 {regels}
 """
     
+    offers_context = ""
+    if offers:
+        regels = "\n".join(
+            f"- {o.get('name') or '?'} | prijs: {o.get('price')} {o.get('currency') or ''} | "
+            f"voorraad: {o.get('availability') or 'onbekend'}" for o in offers[:10])
+        offers_context = f"""
+
+Gestructureerde productdata van de winkel zelf (betrouwbaar — gebruik deze prijs/voorraad bij voorkeur):
+{regels}
+"""
+
     if is_marketplace:
         taak = (f"Dit is een MARKTPLAATS-/zoekpagina met MEERDERE advertenties. "
                 f"Extraheer ELKE afzonderlijke Apple Mac Studio-advertentie met een ZICHTBARE prijs "
@@ -1695,16 +1848,17 @@ Productlinks die op deze pagina staan (kies advertentie_url UITSLUITEND uit deze
 
 URL: {url}
 Titel: {title}
-Pagina-tekst: {text}{links_context}
+Pagina-tekst: {_relevant_text(text)}{links_context}{offers_context}
 
 {taak}
 
 BELANGRIJK — CHIP RECOGNITIE:
-- Herken ALLE Mac Studio chips: M1 Max, M1 Ultra, M2 Max, M2 Ultra, M3 Max, M3 Ultra, M4 Max, M4 Ultra, M5 Max, M5 Ultra
+- Mac Studio chips: M1 Max, M1 Ultra, M2 Max, M2 Ultra, M3 Ultra, M4 Max, M5 Max, M5 Ultra.
+- Er bestaat GEEN Mac Studio met M3 Max of M4 Ultra; M4 Pro / M4 / M2 Pro zijn Mac mini's (geen Mac Studio).
 - LET OP: "M3 Ultra 96GB" betekent M3 Ultra chip met 96GB unified memory — dit is een geldige Mac Studio configuratie!
 - "96GB" is het geheugen (RAM), niet de opslag. De chip is "M3 Ultra".
-- Andere combinaties: "M3 Max 36GB", "M4 Max 48GB", etc.
-- Als er "M3 Ultra" of "M4 Ultra" of "M2 Ultra" staat, is dit een Mac Studio (NIET een Mac Pro).
+- Andere combinaties: "M4 Max 36GB", "M5 Max 48GB", etc.
+- Een "M2 Ultra" kan ook een Mac Pro zijn — controleer dat het product echt "Mac Studio" heet.
 
 BELANGRIJK — DIRECTE PRODUCT/ADVERTENTIE LINK:
 - JE MOET een DIRECTE link naar de specifieke Mac Studio advertentie/productpagina geven.
@@ -1806,11 +1960,11 @@ async def _analyze_openai_compatible(prompt):
 
 
 async def analyze_page(text: str, title: str, url: str, country_name: str,
-                       is_marketplace: bool = False, links=None):
+                       is_marketplace: bool = False, links=None, offers=None):
     """Geeft een LIJST van aanbiedingen terug (0..N). Voor marktplaatsen meerdere."""
     provider = os.environ.get("LLM_PROVIDER", "ollama").lower()
     max_items = 8 if is_marketplace else 1
-    prompt = _build_prompt(text, title, url, country_name, is_marketplace, max_items, links)
+    prompt = _build_prompt(text, title, url, country_name, is_marketplace, max_items, links, offers)
     try:
         if provider in ("lmstudio", "openai", "local", "ollama"):
             raw = await _analyze_openai_compatible(prompt)
@@ -1831,11 +1985,38 @@ async def analyze_page(text: str, title: str, url: str, country_name: str,
 # ---------------------------------------------------------------------------
 # Prijs / marktconformiteit
 # ---------------------------------------------------------------------------
+ECB_FX_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+AED_PER_USD = 3.6725  # dirham is vast gekoppeld aan de dollar; staat niet in de ECB-lijst
+
+# Actuele koersen (bij scanstart ververst via de ECB); FX_TO_EUR is de fallback.
+_fx_rates = dict(FX_TO_EUR)
+
+
+async def refresh_fx_rates(client):
+    """Haal de dagkoersen van de ECB op. Geeft True bij succes; anders blijven de vaste koersen."""
+    try:
+        resp = await client.get(ECB_FX_URL, timeout=10)
+        resp.raise_for_status()
+        rates = {"EUR": 1.0}
+        for cur, rate in re.findall(r"currency=['\"]([A-Z]{3})['\"]\s+rate=['\"]([\d.]+)['\"]", resp.text):
+            rates[cur] = 1.0 / float(rate)
+        if "USD" not in rates or len(rates) < 10:
+            raise ValueError("onvolledige ECB-koerslijst")
+        rates["AED"] = rates["USD"] / AED_PER_USD
+        _fx_rates.update(rates)
+        return True
+    except Exception as e:
+        logger.warning(f"ECB-wisselkoersen ophalen mislukt, vaste koersen gebruikt: {e}")
+        return False
+
+
 def to_eur(price, currency):
     if price is None:
         return None
-    rate = FX_TO_EUR.get((currency or "EUR").upper(), 1.0)
-    return round(float(price) * rate, 2)
+    currency = (currency or "EUR").upper()
+    if currency not in _fx_rates:
+        return None  # onbekende valuta: liever geen prijs dan een verkeerde
+    return round(float(price) * _fx_rates[currency], 2)
 
 
 def match_reference(chip, reference_prices):
@@ -1913,22 +2094,167 @@ LAND_CODE_MAP = {
 }
 
 
-def normalize_land_code(land_naam):
-    """Normaliseert een landnaam naar een 2-letters landcode."""
-    if not land_naam:
-        return "NL"
-    low = land_naam.lower().strip()
-    # Eerst exacte match
-    if low in LAND_CODE_MAP:
-        return LAND_CODE_MAP[low]
-    # Probeer substring match
-    for key, code in LAND_CODE_MAP.items():
-        if key in low or low in key:
-            return code
-    # Probeer als directe code
-    if len(low) == 2:
-        return low.upper()
-    return "NL"  # fallback
+def clean_country_code(code, name, fallback):
+    """2-letterige landcode uit LLM-uitvoer; anders via landnaam; anders het zoekland.
+
+    LLM's geven vaak 'onbekend', 'leederland' of 'UK' terug — dat mag geen
+    (valse) land-mismatch opleveren."""
+    c = (code or "").strip().upper()
+    if c == "UK":
+        c = "GB"
+    if len(c) == 2 and c.isalpha():
+        return c
+    low = (name or "").strip().lower()
+    return LAND_CODE_MAP.get(low, fallback)
+
+
+_CHIP_RE = re.compile(r"\bM\s?([1-9])(?:\s*(Max|Ultra|Pro))?\b", re.I)
+
+
+def normalize_chip(raw):
+    """'m4max' / 'Apple M4 Max 16-core' → ('M4 Max', True). Onbekend → (None, True).
+    Een herkende chip die niet in een Mac Studio bestaat → (chip, False)."""
+    m = _CHIP_RE.search(raw or "")
+    if not m:
+        return None, True
+    chip = f"M{m.group(1)}" + (f" {m.group(2).capitalize()}" if m.group(2) else "")
+    return chip, chip in VALID_STUDIO_CHIPS
+
+
+_CONDITIES = {"nieuw": "nieuw", "new": "nieuw", "refurbished": "refurbished",
+              "gereviseerd": "refurbished", "tweedehands": "tweedehands", "used": "tweedehands",
+              "gebruikt": "tweedehands"}
+_VERKOPER_TYPES = ("officiële Apple reseller", "grote retailer", "refurbished specialist",
+                   "particulier marktplaats")
+
+
+def _clean_choice(value, mapping=None, allowed=()):
+    v = (value or "").strip()
+    if mapping is not None:
+        return mapping.get(v.lower())
+    for a in allowed:
+        if v.lower() == a.lower():
+            return a
+    return None
+
+
+def _clean_spec(value):
+    v = (value or "").strip()
+    return None if not v or v.lower() in ("onbekend", "unknown", "n/a", "?") else v[:40]
+
+
+def _price_in_text(price, text):
+    """Staat dit bedrag (in een gangbare notatie) echt op de pagina? Tegen verzonnen prijzen."""
+    if price is None or not text:
+        return False
+    for n in {int(price), int(round(price))}:
+        groups = f"{n:,}".split(",")
+        pattern = r"(?<![\d.,])" + r"[.,\s'’]?".join(groups) + r"(?!\d)(?![.,\s'’]\d{3}(?!\d))"
+        if re.search(pattern, text):
+            return True
+    return False
+
+
+def _match_offer(price, offers):
+    """Gestructureerd aanbod met (vrijwel) dezelfde prijs, of None."""
+    for o in offers or []:
+        if o.get("price") and price and abs(o["price"] - price) <= max(1.0, price * 0.01):
+            return o
+    return None
+
+
+def build_listing(a, page, url, country, run_id, reference_prices, domain=None):
+    """Valideer en normaliseer één LLM-aanbieding. Geeft (listing, None) of (None, reden)."""
+    domain = domain or urlparse(url).netloc.replace("www.", "")
+    offers = page.get("offers") or []
+    text = page.get("text") or ""
+
+    beschikbaar = (a.get("beschikbaar") or "ONDUIDELIJK").strip().upper()
+    if beschikbaar not in ("JA", "NEE", "ONDUIDELIJK"):
+        beschikbaar = "ONDUIDELIJK"
+
+    chip, is_studio_chip = normalize_chip(a.get("chip"))
+    if not is_studio_chip:
+        return None, f"geen Mac Studio-chip ({chip})"
+
+    price = _to_float(a.get("prijs"))
+    valuta = (a.get("valuta") or "").strip().upper()
+    if valuta not in _fx_rates:
+        valuta = country.get("currency") or "EUR"
+
+    # Prijs alleen geloven als hij op de pagina of in de productdata staat
+    offer = _match_offer(price, offers)
+    if price is not None:
+        if offer:
+            if offer.get("currency") in _fx_rates:
+                valuta = offer["currency"]
+        elif not _price_in_text(price, text):
+            price = None
+    # Geen (geldige) LLM-prijs, maar wel precies één Mac Studio in de productdata? Gebruik die.
+    if price is None:
+        studio_offers = [o for o in offers if o.get("price")
+                         and "mac studio" in (o.get("name") or "").lower()]
+        if len(studio_offers) == 1:
+            offer = studio_offers[0]
+            price = offer["price"]
+            if offer.get("currency") in _fx_rates:
+                valuta = offer["currency"]
+
+    # Voorraadstatus van de winkel zelf gaat voor de inschatting van de LLM
+    avail = (offer or {}).get("availability") or ""
+    if avail in ("OutOfStock", "SoldOut", "Discontinued"):
+        beschikbaar = "NEE"
+    elif avail in ("InStock", "LimitedAvailability", "OnlineOnly") and beschikbaar == "ONDUIDELIJK":
+        beschikbaar = "JA"
+    if beschikbaar == "NEE":
+        return None, "niet beschikbaar"
+
+    price_eur = to_eur(price, valuta)
+    # prijs-sanity: een Mac Studio ligt realistisch tussen €800 en €15.000
+    if price_eur is not None and (price_eur < 800 or price_eur > 15000):
+        price_eur = None
+    # ruis eruit: geen bevestiging én geen prijs = geen bruikbaar aanbod
+    if beschikbaar != "JA" and price_eur is None:
+        return None, "geen bevestiging en geen prijs"
+
+    verzend_land_code = clean_country_code(a.get("verzend_land_code"), a.get("verzend_land"),
+                                           country["code"])
+    verzend_land = (a.get("verzend_land") or "").strip()
+    if verzend_land_code == country["code"] or verzend_land.lower() in ("", "onbekend", "leederland"):
+        verzend_land = country["name"] if verzend_land_code == country["code"] else verzend_land_code
+    conditie = _clean_choice(a.get("conditie"), mapping=_CONDITIES)
+    label, toelichting = market_conformity(price_eur, chip, conditie, reference_prices)
+
+    listing = {
+        "id": str(uuid.uuid4()),
+        "run_id": run_id,
+        "url": url,  # originele scan URL
+        # Directe advertentie URL — alleen als die echt op de pagina stond
+        "advertentie_url": _resolve_listing_url(a.get("advertentie_url"), url, page.get("links")),
+        "winkelnaam": (a.get("winkelnaam") or "").strip()[:80] or domain,
+        "land": country["name"],
+        "land_code": country["code"],
+        "chip": chip,
+        "ram": _clean_spec(a.get("ram")),
+        "opslag": _clean_spec(a.get("opslag")),
+        "prijs_eur": price_eur,
+        "prijs_origineel": price if price_eur is not None else None,
+        "valuta": valuta,
+        "levertijd": _clean_spec(a.get("levertijd")),
+        "beschikbaar": beschikbaar,
+        "verkoper_type": _clean_choice(a.get("verkoper_type"), allowed=_VERKOPER_TYPES),
+        "conditie": conditie,
+        "verzend_land": verzend_land,
+        "verzend_land_code": verzend_land_code,
+        "land_mismatch": verzend_land_code != country["code"],
+        "marktconformiteit": label,
+        "marktconformiteit_toelichting": toelichting,
+        "samenvatting_nl": a.get("samenvatting_nl"),
+        "onderbouwing": a.get("onderbouwing"),
+        "is_demo": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    return listing, None
 
 
 def calculate_quality_score(listing):
@@ -1992,7 +2318,7 @@ async def perform_scan(db, settings: dict, run_id: str):
     log_lines = []
     stats = {"candidates": 0, "analyzed": 0, "available": 0, "excluded": 0,
              "blocked": 0, "errors": 0, "duplicates_removed": 0, "country_mismatch": 0,
-             "blocked_urls": []}
+             "irrelevant": 0, "price_unverified": 0, "blocked_urls": []}
     reference_prices = settings.get("reference_prices", REFERENCE_PRICES)
     max_per_query = settings.get("max_results_per_query", 10)
     max_pages = settings.get("max_pages_per_run", 200)
@@ -2036,6 +2362,10 @@ async def perform_scan(db, settings: dict, run_id: str):
     
     try:
       async with httpx.AsyncClient(http2=True, follow_redirects=True) as client:
+        if await refresh_fx_rates(client):
+            log("💱 Actuele ECB-wisselkoersen geladen.")
+        else:
+            log("💱 ECB-koersen niet bereikbaar — vaste wisselkoersen gebruikt.")
         for i, c in enumerate(enabled, 1):
             await flush("zoeken", f"Zoeken in {c['name']} ({c['code']})…", i, len(enabled))
             retail = SEED_URLS.get(c["code"], [])
@@ -2086,9 +2416,14 @@ async def perform_scan(db, settings: dict, run_id: str):
                     log(f"🚫 LEEG — {domain}: Pagina werd geladen maar had onvoldoende content (<200 tekens)")
                 continue
             
+            if not _mentions_mac_studio(page):
+                stats["irrelevant"] += 1
+                log(f"⏭️  GEEN PRODUCT — {domain}: Geen Mac Studio op deze pagina (geen LLM-analyse)")
+                continue
+
             is_mp = any(m in url.lower() for m in MARKETPLACE_DOMAINS)
             items = await analyze_page(page["text"], page["title"], url, c["name"], is_mp,
-                                       page.get("links"))
+                                       page.get("links"), page.get("offers"))
             stats["analyzed"] += 1
             if not items:
                 # Bepaal reden waarom geen items gevonden
@@ -2098,75 +2433,25 @@ async def perform_scan(db, settings: dict, run_id: str):
                     log(f"⏭️  404 — {domain}: Pagina bestaat niet meer")
                 elif "out of stock" in text_lower or "nicht verfügbar" in text_lower or "uitverkocht" in text_lower:
                     log(f"⏭️  UITVERKOCHT — {domain}: Alle Mac Studio's uitverkocht")
-                elif "mac studio" not in text_lower[:5000]:
-                    log(f"⏭️  GEEN PRODUCT — {domain}: Geen Mac Studio aanbod op deze pagina")
                 else:
                     log(f"⏭️  GEEN RESULTAAT — {domain}: LLM vond geen bruikbaar Mac Studio aanbod")
                 continue
 
             for a in items:
-                beschikbaar = (a.get("beschikbaar") or "ONDUIDELIJK").upper()
-                if beschikbaar == "NEE":
+                listing, reden = build_listing(a, page, url, c, run_id, reference_prices, domain)
+                if listing is None:
                     stats["excluded"] += 1
+                    log(f"⏭️  Uitgesloten — {domain}: {reden}")
                     continue
-                price_eur = to_eur(a.get("prijs"), a.get("valuta", "EUR"))
-                # prijs-sanity: een Mac Studio ligt realistisch tussen €800 en €15.000
-                if price_eur is not None and (price_eur < 800 or price_eur > 15000):
-                    price_eur = None
-                # ruis eruit: geen bevestiging én geen prijs = geen bruikbaar aanbod
-                if beschikbaar != "JA" and price_eur is None:
-                    stats["excluded"] += 1
-                    continue
-                
-                # Extraheer verzendland informatie
-                verzend_land = a.get("verzend_land") or c["name"]
-                verzend_land_code = a.get("verzend_land_code") or c["code"]
-                
-                # Controleer land mismatch
-                land_mismatch = False
-                if verzend_land_code.upper() != c["code"].upper():
-                    land_mismatch = True
+                if listing["land_mismatch"]:
                     stats["country_mismatch"] += 1
-                    log(f"⚠️  Land mismatch: {domain} — zoekland={c['code']}, verzendland={verzend_land_code}")
-                
-                label, toelichting = market_conformity(price_eur, a.get("chip"),
-                                                       a.get("conditie"), reference_prices)
-                
-                # Directe advertentie URL — alleen als die echt op de pagina stond
-                advertentie_url = _resolve_listing_url(a.get("advertentie_url"), url,
-                                                       page.get("links"))
-                
-                listing = {
-                    "id": str(uuid.uuid4()),
-                    "run_id": run_id,
-                    "url": url,  # originele scan URL
-                    "advertentie_url": advertentie_url,  # directe product/advertentie URL
-                    "winkelnaam": a.get("winkelnaam") or domain,
-                    "land": c["name"],
-                    "land_code": c["code"],
-                    "chip": a.get("chip"),
-                    "ram": a.get("ram"),
-                    "opslag": a.get("opslag"),
-                    "prijs_eur": price_eur,
-                    "prijs_origineel": a.get("prijs"),
-                    "valuta": a.get("valuta", "EUR"),
-                    "levertijd": a.get("levertijd"),
-                    "beschikbaar": beschikbaar,
-                    "verkoper_type": a.get("verkoper_type"),
-                    "conditie": a.get("conditie"),
-                    "verzend_land": verzend_land,
-                    "verzend_land_code": verzend_land_code,
-                    "land_mismatch": land_mismatch,
-                    "marktconformiteit": label,
-                    "marktconformiteit_toelichting": toelichting,
-                    "samenvatting_nl": a.get("samenvatting_nl"),
-                    "onderbouwing": a.get("onderbouwing"),
-                    "is_demo": False,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                }
+                    log(f"⚠️  Land mismatch: {domain} — zoekland={c['code']}, "
+                        f"verzendland={listing['verzend_land_code']}")
+                if a.get("prijs") is not None and listing["prijs_eur"] is None:
+                    stats["price_unverified"] += 1  # LLM-prijs niet op de pagina terug te vinden
                 all_listings.append(listing)
                 stats["available"] += 1
-                log(f"✅ {listing['winkelnaam']} ({c['code']}) — {a.get('chip')} — €{price_eur}")
+                log(f"✅ {listing['winkelnaam']} ({c['code']}) — {listing['chip']} — €{listing['prijs_eur']}")
 
         # ---- DEDUPLICATIE ----
         # Verwijder dubbele listings op basis van:

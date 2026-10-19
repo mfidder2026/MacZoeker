@@ -25,9 +25,11 @@ if [ ! -f ".env" ]; then
     echo "✅ .env aangemaakt. Pas de waarden aan (vooral OLLAMA_MODEL)."
 fi
 
-echo "🚀 Backend starten op http://0.0.0.0:8001"
+# BACKEND_HOST=0.0.0.0 alleen gebruiken met API_TOKEN in .env (bereikbaar vanaf het netwerk).
+BACKEND_HOST="${BACKEND_HOST:-127.0.0.1}"
+echo "🚀 Backend starten op http://$BACKEND_HOST:8001"
 echo "   API: http://localhost:8001/api/"
 echo "   Ctrl+C om te stoppen"
 echo ""
 
-exec uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+exec uvicorn server:app --host "$BACKEND_HOST" --port 8001 --reload

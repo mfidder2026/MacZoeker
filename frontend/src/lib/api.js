@@ -3,7 +3,13 @@ import axios from "axios";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
 
-export const api = axios.create({ baseURL: API });
+// Optionele API-sleutel; moet gelijk zijn aan API_TOKEN in backend/.env.
+const API_TOKEN = process.env.REACT_APP_API_TOKEN;
+
+export const api = axios.create({
+  baseURL: API,
+  headers: API_TOKEN ? { "X-API-Key": API_TOKEN } : {},
+});
 
 export const getLatest = () => api.get("/latest").then((r) => r.data);
 export const getRuns = () => api.get("/scan/runs").then((r) => r.data);

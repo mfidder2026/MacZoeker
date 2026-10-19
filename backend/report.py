@@ -66,6 +66,8 @@ def build_email_html(listings, stats, settings, run_date):
     blocked = stats.get("blocked", 0)
     errors = stats.get("errors", 0)
     duplicates = stats.get("duplicates_removed", 0)
+    irrelevant = stats.get("irrelevant", 0)
+    unverified = stats.get("price_unverified", 0)
     
     head = f"""<div style="background:#09090b;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#e5e7eb;">
     <div style="max-width:960px;margin:0 auto;">
@@ -100,7 +102,7 @@ def build_email_html(listings, stats, settings, run_date):
     </div>
     
     <div style="background:#121214;border:1px solid #27272a;border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:#94a3b8;">
-        <strong style="color:#cbd5e1;">Scan statistieken:</strong> {candidates} pagina's gescand · {analyzed} geanalyseerd · {blocked} geblokkeerd · {duplicates} dubbele verwijderd · {errors} fouten
+        <strong style="color:#cbd5e1;">Scan statistieken:</strong> {candidates} pagina's gescand · {analyzed} geanalyseerd · {blocked} geblokkeerd · {duplicates} dubbele verwijderd · {irrelevant} zonder Mac Studio · {unverified} prijzen niet te verifiëren · {errors} fouten
         {' · ⚠️ ' + str(n_mismatch) + ' land mismatch' if n_mismatch > 0 else ''}
     </div>"""
     

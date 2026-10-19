@@ -165,7 +165,8 @@ Bewerk `backend/.env`:
 ```ini
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=mac_studio_zoeker
-CORS_ORIGINS=*
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+API_TOKEN=
 
 # Ollama-configuratie (in plaats van LM Studio)
 LLM_PROVIDER=ollama
@@ -187,7 +188,7 @@ USE_PLAYWRIGHT=true
 Start de backend:
 
 ```bash
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn server:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 Test: open [http://localhost:8001/api/](http://localhost:8001/api/) → je ziet een JSON-bericht.
@@ -260,7 +261,7 @@ MongoDB-collecties die de app zelf aanmaakt/gebruikt:
 |--------------------|------------------------------------------------------------------|
 | `MONGO_URL`        | MongoDB-connectiestring (`mongodb://localhost:27017`)            |
 | `DB_NAME`          | Databasenaam (`mac_studio_zoeker`)                                |
-| `CORS_ORIGINS`     | Toegestane origins (`*` lokaal is prima)                         |
+| `CORS_ORIGINS`     | Toegestane frontend-adressen (standaard `http://localhost:3000`)                         |
 | `LLM_PROVIDER`     | `ollama` (lokaal) of `emergent` (Emergent-platform)              |
 | `OLLAMA_BASE_URL`  | OpenAI-compatibele endpoint van Ollama (`http://localhost:11434/v1`) |
 | `OLLAMA_MODEL`     | Exacte modelnaam in Ollama (bijv. `qwen2.5:14b-instruct-q5_K_M`) |
@@ -276,7 +277,7 @@ MongoDB-collecties die de app zelf aanmaakt/gebruikt:
 - **LLM-fouten / lege JSON**: Kies in Ollama een groter/instruct-model; zet temperatuur laag (de app stuurt `temperature=0`). Controleer dat Ollama draait (`ollama serve`) en `OLLAMA_MODEL` exact klopt.
 - **Backend start niet**: Draait MongoDB? (`sudo systemctl status mongodb`). Klopt `MONGO_URL`?
 - **Frontend bereikt backend niet**: Staat `REACT_APP_BACKEND_URL=http://localhost:8001` in `frontend/.env`? Herstart `yarn start` na wijziging.
-- **CORS-fout**: Zet `CORS_ORIGINS=*` in `backend/.env`.
+- **CORS-fout**: Voeg het adres van je frontend toe aan `CORS_ORIGINS` in `backend/.env`.
 - **Scan duurt lang**: Normaal 5–8 min voor 17 landen (elke pagina = 1 LLM-call). Verlaag `max_pages_per_run` / aantal landen in Instellingen voor een snellere run.
 
 ---

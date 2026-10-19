@@ -147,7 +147,8 @@ Bewerk `backend/.env`:
 ```ini
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=mac_studio_zoeker
-CORS_ORIGINS=*
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+API_TOKEN=
 
 LLM_PROVIDER=lmstudio
 LMSTUDIO_BASE_URL=http://localhost:1234/v1
@@ -165,7 +166,7 @@ SMTP_FROM=
 Start de backend:
 
 ```bash
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn server:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 Test: open http://localhost:8001/api/  → je ziet een JSON-bericht.
@@ -242,7 +243,7 @@ Je kunt eenvoudig meer winkels toevoegen: bewerk `SEED_URLS` / `MARKETPLACE_SEED
 |--------------------|------------------------------------------------------------------|
 | `MONGO_URL`        | MongoDB-connectiestring                                          |
 | `DB_NAME`          | Databasenaam                                                     |
-| `CORS_ORIGINS`     | Toegestane origins (`*` lokaal is prima)                         |
+| `CORS_ORIGINS`     | Toegestane frontend-adressen (standaard `http://localhost:3000`)                         |
 | `LLM_PROVIDER`     | `lmstudio` (lokaal) of `emergent` (Emergent-platform)            |
 | `LMSTUDIO_BASE_URL`| OpenAI-compatibele endpoint van LM Studio                        |
 | `LMSTUDIO_MODEL`   | Exacte modelnaam in LM Studio                                    |
@@ -289,7 +290,7 @@ Als `ENABLE_HEALTH_CHECK=true` in `frontend/.env`:
 - **Backend start niet**: draait MongoDB? (`brew services list`). Klopt `MONGO_URL`?
 - **Frontend bereikt backend niet**: staat `REACT_APP_BACKEND_URL=http://localhost:8001` in
   `frontend/.env`? Herstart `yarn start` na wijziging.
-- **CORS-fout**: zet `CORS_ORIGINS=*` in `backend/.env`.
+- **CORS-fout**: voeg het adres van je frontend toe aan `CORS_ORIGINS` in `backend/.env`.
 - **Scan duurt lang**: normaal 5–8 min voor 17 landen (elke pagina = 1 LLM-call). Verlaag
   `max_pages_per_run` / aantal landen in Instellingen voor een snellere run.
 

@@ -1,14 +1,16 @@
-from fastapi import FastAPI, APIRouter, BackgroundTasks, HTTPException
+from fastapi import FastAPI, APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import re
 import asyncio
+import secrets
 import logging
 import uuid
 from pathlib import Path
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -29,7 +31,21 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger("server")
 
 app = FastAPI()
-api_router = APIRouter(prefix="/api")
+
+
+def require_api_key(request: Request):
+    """Als API_TOKEN in .env staat, moet elke API-aanroep (behalve /api/health) de header
+    'X-API-Key' met die waarde meesturen. Zonder API_TOKEN is de API open — draai de
+    backend dan alleen op 127.0.0.1 (standaard in reboot.sh/start.sh)."""
+    token = os.environ.get("API_TOKEN", "").strip()
+    if not token or request.url.path == "/api/health":
+        return
+    given = request.headers.get("x-api-key", "")
+    if not secrets.compare_digest(given.encode(), token.encode()):
+        raise HTTPException(401, "Ongeldige of ontbrekende API-sleutel (X-API-Key).")
+
+
+api_router = APIRouter(prefix="/api", dependencies=[Depends(require_api_key)])
 
 scheduler = AsyncIOScheduler(timezone="Europe/Amsterdam")
 
@@ -215,20 +231,44 @@ async def seed_demo():
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
+class CountryIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    code: str = Field(pattern=r"^[A-Z]{2}$")
+    name: str = Field(min_length=1, max_length=80)
+    term: str = Field(min_length=1, max_length=200)
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    enabled: bool = True
+
+
 class SettingsUpdate(BaseModel):
-    recipient_email: Optional[str] = None
-    send_time: Optional[str] = None
-    max_results_per_query: Optional[int] = None
-    max_pages_per_run: Optional[int] = None
+    model_config = ConfigDict(extra="forbid")
+    recipient_email: Optional[Union[EmailStr, Literal[""]]] = None
+    send_time: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    max_results_per_query: Optional[int] = Field(None, ge=1, le=50)
+    max_pages_per_run: Optional[int] = Field(None, ge=1, le=1000)
     include_marketplaces: Optional[bool] = None
     chip_variants: Optional[List[str]] = None
-    countries: Optional[List[dict]] = None
-    reference_prices: Optional[dict] = None
-    smtp_host: Optional[str] = None
-    smtp_port: Optional[str] = None
-    smtp_user: Optional[str] = None
-    smtp_password: Optional[str] = None
-    smtp_from: Optional[str] = None
+    countries: Optional[List[CountryIn]] = None
+    reference_prices: Optional[Dict[str, float]] = None
+    smtp_host: Optional[str] = Field(None, max_length=255)
+    smtp_port: Optional[str] = Field(None, pattern=r"^\d{1,5}$")
+    smtp_user: Optional[str] = Field(None, max_length=255)
+    smtp_password: Optional[str] = Field(None, max_length=255)
+    smtp_from: Optional[str] = Field(None, max_length=255)
+
+    @field_validator("reference_prices")
+    @classmethod
+    def _positive_prices(cls, v):
+        if v is not None and any(p <= 0 for p in v.values()):
+            raise ValueError("referentieprijzen moeten positief zijn")
+        return v
+
+    @field_validator("smtp_host", "smtp_user", "smtp_from")
+    @classmethod
+    def _no_header_injection(cls, v):
+        if v is not None and re.search(r"[\r\n]", v):
+            raise ValueError("ongeldige tekens")
+        return v
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +292,7 @@ async def read_settings():
 
 @api_router.put("/settings")
 async def update_settings(payload: SettingsUpdate):
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    updates = {k: v for k, v in payload.model_dump(mode="json").items() if v is not None}
     # leeg wachtwoord = niet wijzigen (behoud bestaande)
     if updates.get("smtp_password", None) == "":
         updates.pop("smtp_password", None)
@@ -396,17 +436,25 @@ async def reference_prices():
 
 app.include_router(api_router)
 
+# Standaard alleen de lokale frontend; zet CORS_ORIGINS in .env voor andere adressen.
+_cors_origins = [o.strip() for o in os.environ.get(
+    "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_origins=_cors_origins,
+    allow_methods=["GET", "POST", "PUT"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 
 @app.on_event("startup")
 async def on_startup():
+    if not os.environ.get("API_TOKEN", "").strip():
+        logger.warning("API_TOKEN niet ingesteld — de API is zonder sleutel bereikbaar. "
+                       "Draai de backend alleen op 127.0.0.1, of zet API_TOKEN in .env.")
+    if "*" in _cors_origins:
+        logger.warning("CORS_ORIGINS bevat '*' — elke website kan de API aanroepen.")
     await get_settings()
     # verweesde runs (door herstart onderbroken) netjes afsluiten
     await db.scan_runs.update_many(

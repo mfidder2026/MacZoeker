@@ -149,11 +149,11 @@ def test_cancel_stops_running_scan_without_report(monkeypatch):
 
     db = _DB()
     monkeypatch.setattr(server, "db", db)
-    started = asyncio.Event()
+    started = {}
     finished_normally = []
 
     async def slow_scan(_db, _settings, _run_id):
-        started.set()
+        started["event"].set()
         await asyncio.sleep(3600)
         finished_normally.append(True)
         return {}, []
@@ -161,8 +161,9 @@ def test_cancel_stops_running_scan_without_report(monkeypatch):
     monkeypatch.setattr(server.scanner, "perform_scan", slow_scan)
 
     async def scenario():
+        started["event"] = asyncio.Event()  # binnen de loop aanmaken (Python 3.9)
         job = asyncio.ensure_future(server.run_scan_job("test"))
-        await asyncio.wait_for(started.wait(), 5)
+        await asyncio.wait_for(started["event"].wait(), 5)
         res = await server.cancel_scan_job()
         await asyncio.wait_for(job, 5)
         return res
