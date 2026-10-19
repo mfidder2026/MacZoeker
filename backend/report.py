@@ -1,6 +1,7 @@
 """Genereert het Nederlandstalige e-mailrapport en (optioneel) verzending via SMTP."""
 import os
 import ssl
+import html as html_lib
 import smtplib
 import logging
 from email.mime.text import MIMEText
@@ -9,6 +10,17 @@ from datetime import datetime
 from collections import Counter
 
 logger = logging.getLogger("report")
+
+def _e(value, default=""):
+    """HTML-escape voor gescrapete/LLM-waarden (voorkomt HTML-/script-injectie)."""
+    return html_lib.escape(str(value if value not in (None, "") else default), quote=True)
+
+
+def _safe_url(url):
+    """Alleen http(s)-links toestaan; al het andere (javascript:, data:, …) wordt '#'."""
+    url = (url or "").strip()
+    return _e(url) if url.lower().startswith(("http://", "https://")) else "#"
+
 
 BADGE_COLORS = {
     "Scherp geprijsd": "#34d399",
@@ -44,9 +56,9 @@ def build_email_html(listings, stats, settings, run_date):
     types = Counter(l.get("verkoper_type", "onbekend") for l in items)
     condities = Counter(l.get("conditie", "onbekend") for l in items)
     
-    land_txt = ", ".join(f"{k}: {v}" for k, v in landen.items()) or "—"
-    type_txt = ", ".join(f"{k}: {v}" for k, v in types.items()) or "—"
-    cond_txt = ", ".join(f"{k}: {v}" for k, v in condities.items()) or "—"
+    land_txt = ", ".join(f"{_e(k)}: {v}" for k, v in landen.items()) or "—"
+    type_txt = ", ".join(f"{_e(k)}: {v}" for k, v in types.items()) or "—"
+    cond_txt = ", ".join(f"{_e(k)}: {v}" for k, v in condities.items()) or "—"
     
     # Stats informatie
     candidates = stats.get("candidates", 0)
@@ -113,13 +125,13 @@ def build_email_html(listings, stats, settings, run_date):
         prijs = f"€ {l['prijs_eur']:,.0f}".replace(",", ".") if l.get("prijs_eur") else "—"
         prijs_orig = ""
         if l.get("valuta") and l["valuta"] != "EUR" and l.get("prijs_origineel"):
-            prijs_orig = f'<br><span style="color:#64748b;font-size:11px;">{l["prijs_origineel"]} {l["valuta"]}</span>'
+            prijs_orig = f'<br><span style="color:#64748b;font-size:11px;">{_e(l["prijs_origineel"])} {_e(l["valuta"])}</span>'
         
         ja = (l.get("beschikbaar") or "").upper() == "JA"
         status_color = "#34d399" if ja else "#fbbf24"
         status_txt = "Bevestigd" if ja else "Onduidelijk"
         
-        verzend_land = l.get("verzend_land", l.get("land", ""))
+        verzend_land = _e(l.get("verzend_land", l.get("land", "")))
         land_mismatch = l.get("land_mismatch", False)
         mismatch_badge = ' ⚠️ <span style="color:#fbbf24;font-size:11px;">Mismatch</span>' if land_mismatch else ''
         
@@ -133,29 +145,29 @@ def build_email_html(listings, stats, settings, run_date):
             conditie_badge = '<span style="color:#fbbf24;font-size:10px;">TWEEDEHANDS</span>'
         
         # Gebruik advertentie_url indien beschikbaar
-        link_url = l.get("advertentie_url") or l.get("url", "#")
+        link_url = _safe_url(l.get("advertentie_url") or l.get("url"))
         
         rows += f"""<tr style="border-bottom:1px solid #27272a;{'background:#fbbf24;color:#1f2937;' if land_mismatch else ''}">
         <td style="padding:12px 10px;font-size:13px;color:#fff;">
-            <div style="font-weight:600;">{l.get('chip','?')} · {l.get('ram','')}/{l.get('opslag','')}</div>
+            <div style="font-weight:600;">{_e(l.get('chip'), '?')} · {_e(l.get('ram'))}/{_e(l.get('opslag'))}</div>
             <div style="margin-top:2px;">{conditie_badge}</div>
         </td>
         <td style="padding:12px 10px;font-size:14px;color:#fff;text-align:right;font-weight:bold;font-family:monospace;white-space:nowrap;">
             {prijs}{prijs_orig}
         </td>
         <td style="padding:12px 10px;font-size:13px;color:#cbd5e1;">
-            <div>{l.get('land','')}</div>
-            <div style="color:#64748b;font-size:11px;">{l.get('winkelnaam','')}</div>
+            <div>{_e(l.get('land'))}</div>
+            <div style="color:#64748b;font-size:11px;">{_e(l.get('winkelnaam'))}</div>
         </td>
         <td style="padding:12px 10px;font-size:12px;color:#cbd5e1;">
             <div>{verzend_land}{mismatch_badge}</div>
         </td>
-        <td style="padding:12px 10px;font-size:12px;color:#cbd5e1;">{l.get('levertijd','—')}</td>
+        <td style="padding:12px 10px;font-size:12px;color:#cbd5e1;">{_e(l.get('levertijd'), '—')}</td>
         <td style="padding:12px 10px;font-size:12px;">
             <span style="color:{status_color};font-weight:bold;">{status_txt}</span>
         </td>
         <td style="padding:12px 10px;font-size:12px;">
-            <span style="color:{color};font-weight:bold;">{l.get('marktconformiteit','')}</span>
+            <span style="color:{color};font-weight:bold;">{_e(l.get('marktconformiteit'))}</span>
         </td>
         <td style="padding:12px 10px;font-size:12px;">
             <a href="{link_url}" style="color:#60a5fa;text-decoration:none;">Bekijk →</a>
@@ -195,11 +207,11 @@ def build_email_html(listings, stats, settings, run_date):
         for b in blocked_urls:
             blocked_rows += f"""<tr style="border-bottom:1px solid #27272a;">
             <td style="padding:10px 12px;font-size:13px;color:#cbd5e1;">
-                <a href="{b['url']}" style="color:#60a5fa;text-decoration:none;">{b['domain']}</a>
+                <a href="{_safe_url(b.get('url'))}" style="color:#60a5fa;text-decoration:none;">{_e(b.get('domain'))}</a>
             </td>
-            <td style="padding:10px 12px;font-size:12px;color:#94a3b8;">{b.get('reason', 'Onbekend')}</td>
+            <td style="padding:10px 12px;font-size:12px;color:#94a3b8;">{_e(b.get('reason'), 'Onbekend')}</td>
             <td style="padding:10px 12px;font-size:12px;">
-                <a href="{b['url']}" style="color:#60a5fa;text-decoration:none;" target="_blank">🔗 Open →</a>
+                <a href="{_safe_url(b.get('url'))}" style="color:#60a5fa;text-decoration:none;" target="_blank">🔗 Open →</a>
             </td>
             </tr>"""
         blocked_section = f"""<div style="margin-top:20px;padding:16px;background:#18181b;border:1px solid #27272a;border-radius:10px;">

@@ -23,6 +23,9 @@ const MARKT = {
   Onbekend: "text-slate-400 bg-slate-400/10 border-slate-400/20",
 };
 
+// Alleen http(s)-links doorlaten; voorkomt javascript:-links uit gescrapete data.
+const safeUrl = (u) => (typeof u === "string" && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
+
 const fmtEur = (v) =>
   v == null ? "—" : "€ " + Number(v).toLocaleString("nl-NL", { maximumFractionDigits: 0 });
 
@@ -79,7 +82,7 @@ function BlockedWebsites({ blockedUrls }) {
                 <tr key={i} className="border-b border-[#1c1c1f] hover:bg-[#18181b] transition-colors">
                   <td className="px-4 py-3">
                     <a
-                      href={b.url}
+                      href={safeUrl(b.url)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-blue-400 hover:text-blue-300 transition-colors"
@@ -90,7 +93,7 @@ function BlockedWebsites({ blockedUrls }) {
                   <td className="px-4 py-3 text-slate-400">{b.reason || "Onbekend"}</td>
                   <td className="px-4 py-3">
                     <a
-                      href={b.url}
+                      href={safeUrl(b.url)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
@@ -189,9 +192,9 @@ function ListingsTable({ listings }) {
                 <Badge text={l.marktconformiteit} className={MARKT[l.marktconformiteit] || MARKT.Onbekend} />
               </td>
               <td className="px-5 py-4">
-                {l.advertentie_url || l.url ? (
+                {safeUrl(l.advertentie_url) || safeUrl(l.url) ? (
                   <a
-                    href={l.advertentie_url || l.url}
+                    href={safeUrl(l.advertentie_url) || safeUrl(l.url)}
                     target="_blank"
                     rel="noreferrer"
                     data-testid={`listing-link-${l.id}`}
@@ -474,10 +477,15 @@ function EmailPreview({ report }) {
                 {report.sent ? "Verzonden" : "Niet verzonden"} — {report.send_reason}
               </div>
             </div>
-            <div
+            {/* Sandboxed iframe: rapport-HTML bevat gescrapete data en mag geen scripts
+                draaien of bij de app/API kunnen. Links openen in een nieuw tabblad. */}
+            <iframe
               data-testid="email-preview-content"
-              className="border border-[#27272a] overflow-hidden"
-              dangerouslySetInnerHTML={{ __html: report.html }}
+              title="E-mailrapport"
+              className="border border-[#27272a] w-full h-[70vh] bg-[#09090b]"
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
+              referrerPolicy="no-referrer"
+              srcDoc={`<!doctype html><meta charset="utf-8"><base target="_blank"><body style="margin:0">${report.html || ""}</body>`}
             />
           </>
         ) : (

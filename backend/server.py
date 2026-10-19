@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import asyncio
 import logging
 import uuid
 from pathlib import Path
@@ -100,11 +101,21 @@ def smtp_cfg(settings):
             ("smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from")}
 
 
+# De asyncio-taak van de lopende scan, zodat /scan/cancel hem echt kan stoppen.
+_current_scan_task: Optional[asyncio.Task] = None
+
+
+def _scan_is_running():
+    return _current_scan_task is not None and not _current_scan_task.done()
+
+
 async def run_scan_job(trigger="handmatig"):
+    global _current_scan_task
     # voorkom overlappende scans (dubbel scrapen veroorzaakt extra blokkades)
-    if await db.scan_runs.count_documents({"status": "bezig"}) > 0:
+    if _scan_is_running() or await db.scan_runs.count_documents({"status": "bezig"}) > 0:
         logger.info("Scan overgeslagen — er loopt er al één.")
         return None
+    _current_scan_task = asyncio.current_task()
     settings = await get_settings_full()
     run_id = str(uuid.uuid4())
     run_doc = {
@@ -120,11 +131,20 @@ async def run_scan_job(trigger="handmatig"):
     await db.scan_runs.insert_one(dict(run_doc))
     try:
         stats, log_lines = await scanner.perform_scan(db, settings, run_id)
+    except asyncio.CancelledError:
+        # cancel_scan_job heeft de run al op 'onderbroken' gezet; geen rapport/mail.
+        logger.info("Scan geannuleerd.")
+        return run_id
     except Exception as e:
         logger.exception("Scan mislukt")
         await db.scan_runs.update_one({"id": run_id}, {"$set": {
             "status": "mislukt", "finished_at": datetime.now(timezone.utc).isoformat(),
             "log": [f"Fout: {e}"]}})
+        return run_id
+
+    # tussentijds geannuleerd? dan geen rapport en geen mail
+    current = await db.scan_runs.find_one({"id": run_id}, {"status": 1})
+    if not current or current.get("status") != "bezig":
         return run_id
 
     # rapport genereren
@@ -142,7 +162,7 @@ async def run_scan_job(trigger="handmatig"):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.email_reports.insert_one(dict(report_doc))
-    await db.scan_runs.update_one({"id": run_id}, {"$set": {
+    await db.scan_runs.update_one({"id": run_id, "status": "bezig"}, {"$set": {
         "status": "voltooid",
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "stats": stats,
@@ -256,27 +276,32 @@ async def email_test():
     return status
 
 
-# Globale flag om scans te cancellen (voor future use met asyncio)
-_scan_cancel_flag = False
-
-
 async def cancel_scan_job():
-    """Markeer de huidige scan als 'onderbroken'."""
+    """Stop de lopende scan-taak en markeer de run als 'onderbroken'."""
     running = await db.scan_runs.find_one({"status": "bezig"}, {"_id": 0})
+    task_running = _scan_is_running()
+    if not running and not task_running:
+        return {"message": "Er loopt geen actieve scan.", "status": "geen"}
     if running:
-        await db.scan_runs.update_one({"id": running["id"]}, {"$set": {
-            "status": "onderbroken",
-            "finished_at": datetime.now(timezone.utc).isoformat(),
-            "log": [f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} — Scan handmatig gestopt door gebruiker."],
-        }})
-        logger.info("Scan gestopt door gebruiker.")
-        return {"message": "Scan gestopt.", "status": "onderbroken"}
-    return {"message": "Er loopt geen actieve scan.", "status": "geen"}
+        await db.scan_runs.update_one({"id": running["id"]}, {
+            "$set": {"status": "onderbroken",
+                     "finished_at": datetime.now(timezone.utc).isoformat()},
+            "$push": {"log": f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} — "
+                             "Scan handmatig gestopt door gebruiker."},
+        })
+    if task_running:
+        _current_scan_task.cancel()
+        try:
+            await asyncio.wait_for(asyncio.shield(_current_scan_task), timeout=10)
+        except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+            pass
+    logger.info("Scan gestopt door gebruiker.")
+    return {"message": "Scan gestopt.", "status": "onderbroken"}
 
 
 @api_router.post("/scan/run")
 async def trigger_scan(background_tasks: BackgroundTasks):
-    if await db.scan_runs.count_documents({"status": "bezig"}) > 0:
+    if _scan_is_running() or await db.scan_runs.count_documents({"status": "bezig"}) > 0:
         return {"message": "Er loopt al een scan — even geduld.", "status": "bezig"}
     background_tasks.add_task(run_scan_job, "handmatig")
     return {"message": "Scan gestart. Dit kan enkele minuten duren.", "status": "bezig"}

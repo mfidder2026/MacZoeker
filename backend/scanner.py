@@ -8,7 +8,7 @@ import logging
 import asyncio
 from itertools import zip_longest
 from datetime import datetime, timezone
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, unquote, urljoin
 
 import httpx
 from bs4 import BeautifulSoup
@@ -682,14 +682,61 @@ async def search_urls(client, country, term, max_results, include_marketplaces):
     return [u for u in urls if _is_useful(u, include_marketplaces)]
 
 
-def _parse_html(html: str):
-    """Synchroon HTML parsen (CPU-werk) — in thread aangeroepen om de event-loop vrij te houden."""
+def _parse_html(html: str, base_url: str = ""):
+    """Synchroon HTML parsen (CPU-werk) — in thread aangeroepen om de event-loop vrij te houden.
+
+    Geeft naast titel en zichtbare tekst ook de (absolute) links op de pagina terug,
+    zodat de LLM een echte productlink kan kiezen in plaats van er een te verzinnen."""
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "noscript", "svg"]):
         tag.decompose()
     title = soup.title.string.strip() if soup.title and soup.title.string else ""
+    links = []
+    seen = set()
+    for a in soup.find_all("a", href=True):
+        href = urljoin(base_url, a["href"].strip()) if base_url else a["href"].strip()
+        href = href.split("#", 1)[0]
+        if not href.startswith(("http://", "https://")) or href in seen:
+            continue
+        seen.add(href)
+        links.append({"url": href, "text": re.sub(r"\s+", " ", a.get_text(" ")).strip()[:120]})
     text = re.sub(r"\s+", " ", soup.get_text(" ")).strip()
-    return {"title": title, "text": text[:12000]}
+    return {"title": title, "text": text[:12000], "links": links}
+
+
+# Zinnen die op een anti-bot/challenge-pagina wijzen. Bewust specifiek: generieke woorden als
+# "performance", "loading" of "cloudflare" staan op vrijwel elke normale winkelpagina.
+BLOCK_PHRASES = (
+    "verify you are human", "verifying you are human", "are you a robot", "are you human",
+    "captcha", "access denied", "attention required", "just a moment",
+    "checking your browser", "check your browser before", "request unsuccessful",
+    "pardon our interruption", "ddos protection", "bot detection", "unusual traffic",
+    "enable javascript and cookies to continue",
+)
+
+
+def _looks_blocked(data) -> bool:
+    """True als de geparste pagina een anti-bot/challenge-pagina lijkt.
+
+    Kijkt naar de titel en — alleen bij korte pagina's — naar de zichtbare tekst. Echte
+    challenge-pagina's zijn klein; een volle productpagina met 'captcha' in een
+    formulier-footer wordt zo niet onterecht als geblokkeerd gezien."""
+    if not data:
+        return False
+    title = (data.get("title") or "").lower()
+    text = (data.get("text") or "").lower()
+    if any(p in title for p in BLOCK_PHRASES):
+        return True
+    return len(text) < 1500 and any(p in text for p in BLOCK_PHRASES)
+
+
+def _classify_page(data):
+    """Zet een geparste pagina om naar (status, data) voor fetch_page."""
+    if _looks_blocked(data):
+        return ("blocked", None)
+    if data and len(data["text"]) >= 200:
+        return ("ok", data)
+    return ("empty", None)
 
 
 # Global stealth script that runs on every page load
@@ -1136,23 +1183,12 @@ async def _fetch_playwright_stealth(browser, url: str, country_code=None, delay=
         except Exception:
             pass
         
-        # Controleer op blokkade - uitgebreide detectie
-        page_content = await pg.content()
-        blocked_indicators = [
-            "captcha", "verify you are human", "access denied", "blocked",
-            "security check", "please wait while your request is being reviewed",
-            "cloudflare", "check your browser", "ray id", "performance",
-            "bot detection", "anti-bot", "protected by"
-        ]
-        if any(ind in page_content.lower()[:3000] for ind in blocked_indicators):
-            logger.info(f"Playwright stealth blokkade gedetecteerd voor {domain}")
-            return ("blocked", None)
-        
         html = await pg.content()
-        data = await asyncio.to_thread(_parse_html, html)
-        if data and len(data["text"]) >= 200:
-            return ("ok", data)
-        return ("empty", None)
+        data = await asyncio.to_thread(_parse_html, html, pg.url)
+        result = _classify_page(data)
+        if result[0] == "blocked":
+            logger.info(f"Playwright stealth blokkade gedetecteerd voor {domain}")
+        return result
     except Exception as e:
         error_type = type(e).__name__
         logger.warning(f"Playwright stealth mislukt voor {domain} ({error_type}): {e}")
@@ -1359,12 +1395,11 @@ async def _fetch_selenium(url: str, country_code=None):
             pass
         
         html = driver.page_source
-        data = await asyncio.to_thread(_parse_html, html)
-        
-        if data and len(data["text"]) >= 200:
+        data = await asyncio.to_thread(_parse_html, html, driver.current_url)
+        result = _classify_page(data)
+        if result[0] == "ok":
             logger.info(f"Selenium fallback succesvol voor {domain}")
-            return ("ok", data)
-        return ("empty", None)
+        return result
         
     except Exception as e:
         error_type = type(e).__name__
@@ -1397,11 +1432,14 @@ async def _fetch_with_extended_retries(client, url: str, country_code=None):
             )
             
             if resp.status_code == 200:
-                data = await asyncio.to_thread(_parse_html, resp.text)
-                if data and len(data["text"]) >= 200:
+                data = await asyncio.to_thread(_parse_html, resp.text, str(resp.url))
+                result = _classify_page(data)
+                if result[0] == "ok":
                     logger.info(f"Extended retry succesvol (attempt {i+1}) voor {domain}")
-                    return ("ok", data)
-                return ("empty", None)
+                    return result
+                if result[0] == "blocked":
+                    continue
+                return result
             elif resp.status_code == 403:
                 logger.info(f"Extended retry 403 (attempt {i+1}) voor {domain}")
                 continue
@@ -1454,12 +1492,15 @@ async def fetch_page(client: httpx.AsyncClient, url: str, country_code=None, bro
                 logger.info(f"HTTP {resp.status_code} voor {domain}")
                 break
             
-            data = await asyncio.to_thread(_parse_html, resp.text)
-            if data and len(data["text"]) >= 200:
-                return ("ok", data)
+            data = await asyncio.to_thread(_parse_html, resp.text, str(resp.url))
+            result = _classify_page(data)
+            if result[0] == "ok":
+                return result
+            if result[0] == "blocked":
+                logger.info(f"Challenge-pagina (anti-bot) voor {domain}")
             else:
                 logger.info(f"LEGE content ({len(data['text'] if data else 0)} chars) voor {domain}")
-                break
+            break
         except Exception as e:
             error_type = type(e).__name__
             logger.warning(f"Netwerkfout voor {domain} ({error_type}): {e}")
@@ -1517,13 +1558,6 @@ async def _fetch_playwright(browser, url: str, country_code=None):
         
         await pg.wait_for_timeout(3000)
         
-        page_text = await pg.content()
-        blocked_indicators = ["captcha", "verify you are human", "access denied", "blocked",
-                              "security check", "please wait", "loading"]
-        if any(indicator in page_text.lower()[:2000] for indicator in blocked_indicators):
-            logger.warning(f"Playwright blokkade gedetecteerd voor {domain}")
-            return ("blocked", None)
-        
         for sel in ["#onetrust-accept-btn-handler",
                     "button:has-text('Accepteren')", "button:has-text('Alles accepteren')",
                     "button:has-text('Akkoord')", "button:has-text('Accept all')",
@@ -1556,10 +1590,11 @@ async def _fetch_playwright(browser, url: str, country_code=None):
             pass
         
         html = await pg.content()
-        data = await asyncio.to_thread(_parse_html, html)
-        if data and len(data["text"]) >= 200:
-            return ("ok", data)
-        return ("empty", None)
+        data = await asyncio.to_thread(_parse_html, html, pg.url)
+        result = _classify_page(data)
+        if result[0] == "blocked":
+            logger.warning(f"Playwright blokkade gedetecteerd voor {domain}")
+        return result
     except Exception as e:
         error_type = type(e).__name__
         logger.warning(f"Playwright mislukt voor {domain} ({error_type}): {e}")
@@ -1584,51 +1619,64 @@ def _extract_json(raw: str):
     return json.loads(raw)
 
 
-def _extract_product_links_from_html(text, url):
-    """Probeer directe productlinks te extraheren uit de HTML-tekst."""
-    import re
-    product_links = []
-    
-    # Patroon 1: eBay product URLs
-    ebay_pattern = r'https://www\.ebay\.(co\.uk|de|com|fr|it|com\.au|com\.hk)/itm/[^\s"\'<>]+'
-    product_links.extend(re.findall(ebay_pattern, text))
-    
-    # Patroon 2: Amazon product URLs
-    amazon_pattern = r'https://www\.[a-z]+\.(com|de|co\.uk|fr|it|nl|es|com\.au|ca|jp)/[a-z\-]*/[B0-9]{9}'
-    product_links.extend(re.findall(amazon_pattern, text))
-    
-    # Patroon 3: Marktplaats product URLs (BEIDE formaten!)
-    marktplaats_pattern = r'https://www\.marktplaats\.nl(/[a-z]+)*/l/[0-9]+'
-    product_links.extend(re.findall(marktplaats_pattern, text))
-    # Marktplaats /v/ format (nieuwe URL structuur)
-    marktplaats_v_pattern = r'https://www\.marktplaats\.nl/v/[^\s"\'<>]+'
-    product_links.extend(re.findall(marktplaats_v_pattern, text))
-    
-    # Patroon 4: Kleinanzeigen URLs
-    kleinanzeigen_pattern = r'https://www\.kleinanzeigen\.de/[^\s"\'<>]*-([0-9]+)'
-    product_links.extend(re.findall(kleinanzeigen_pattern, text))
-    
-    # Patroon 5: Digitec/challenger product URLs
-    digitec_pattern = r'https://www\.digitec\.ch/en/s[1-9]/product/[^\s"\'<>]+'
-    product_links.extend(re.findall(digitec_pattern, text))
-    
-    # Patroon 6: tutti.ch / ricardo.ch URLs
-    tutti_pattern = r'https://www\.tutti\.ch/[^\s"\'<>]*'
-    product_links.extend(re.findall(tutti_pattern, text))
-    ricardo_pattern = r'https://www\.ricardo\.ch/[^\s"\'<>]*'
-    product_links.extend(re.findall(ricardo_pattern, text))
-    
-    return product_links
+# URL-patronen van individuele product-/advertentiepagina's op bekende sites.
+PRODUCT_URL_PATTERNS = [
+    re.compile(p) for p in (
+        r"ebay\.[a-z.]+/itm/",
+        r"amazon\.[a-z.]+/(?:[^/]+/)?(?:dp|gp/product)/[A-Z0-9]{10}",
+        r"marktplaats\.nl/(?:v/|a/|.*?/m\d+)",
+        r"2dehands\.be/v/|2ememain\.be/v/",
+        r"kleinanzeigen\.de/s-anzeige/",
+        r"digitec\.ch/[a-z]{2}/s\d+/product/|galaxus\.[a-z]+/[a-z]{2}/s\d+/product/",
+        r"tutti\.ch/[a-z]{2}/vi/|ricardo\.ch/[a-z]{2}/a/",
+        r"leboncoin\.fr/ad/|subito\.it/.+\.htm",
+    )
+]
 
 
-def _build_prompt(text, title, url, country_name, is_marketplace=False, max_items=1):
-    # Extraheer mogelijke productlinks uit de HTML
-    potential_links = _extract_product_links_from_html(text, url)
+def _candidate_product_links(links, max_links=25):
+    """Kies uit de links op een pagina de waarschijnlijke Mac Studio-productlinks."""
+    out = []
+    for link in links or []:
+        href = link["url"]
+        low_href = href.lower()
+        low_text = (link.get("text") or "").lower()
+        is_product = any(pat.search(href) for pat in PRODUCT_URL_PATTERNS)
+        mentions_studio = ("mac studio" in low_text or "mac-studio" in low_href
+                           or "macstudio" in low_href)
+        if is_product or mentions_studio:
+            out.append(link)
+        if len(out) >= max_links:
+            break
+    return out
+
+
+def _resolve_listing_url(candidate, page_url, page_links):
+    """Valideer de door de LLM gekozen advertentie_url.
+
+    Alleen http(s)-links die echt op de pagina stonden (of de pagina zelf) worden
+    geaccepteerd; anders vallen we terug op de gescande URL. Zo komen er geen
+    verzonnen of javascript:-links in rapport en dashboard."""
+    candidate = (candidate or "").strip().split("#", 1)[0]
+    if not candidate.startswith(("http://", "https://")):
+        return page_url
+    if candidate.rstrip("/") == page_url.rstrip("/"):
+        return page_url
+    known = {l["url"].rstrip("/") for l in page_links or []}
+    return candidate if candidate.rstrip("/") in known else page_url
+
+
+def _build_prompt(text, title, url, country_name, is_marketplace=False, max_items=1, links=None):
+    # Geef de echte productlinks van de pagina mee, zodat de LLM er een kan kiezen
+    potential_links = _candidate_product_links(links)
     links_context = ""
     if potential_links:
+        regels = "\n".join(f"- {l['url']} ({l['text']})" if l.get("text") else f"- {l['url']}"
+                           for l in potential_links)
         links_context = f"""
-\n\nBeschikbare directe productlinks gevonden in de HTML (gebruik deze als advertentie_url):
-{chr(10).join(potential_links[:10])}
+
+Productlinks die op deze pagina staan (kies advertentie_url UITSLUITEND uit deze lijst of gebruik de pagina-URL):
+{regels}
 """
     
     if is_marketplace:
@@ -1668,7 +1716,7 @@ BELANGRIJK — DIRECTE PRODUCT/ADVERTENTIE LINK:
 - Voor Marktplaats: als dit een individuele advertentiepagina is, gebruik DAN de huidige URL als advertentie_url.
 - Voor Digitec/tutti.ch/ricardo.ch: gebruik de productpagina URL.
 - De advertentie_url IS de URL waar de gebruiker naartoe gaat wanneer ze op "Bekijk" klikken.
-- Als er géén directe link beschikbaar is, gebruik dan de originele URL.
+- Als er géén directe link beschikbaar is, gebruik dan de originele URL. Verzin NOOIT zelf een URL.
 
 BELANGRIJK — Land van verzending:
 Bepaal het LAND VAN VERZENDING/VERKOOP uit de pagina-inhoud. Dit kan verschillen van de land-code van de zoekopdracht.
@@ -1758,11 +1806,11 @@ async def _analyze_openai_compatible(prompt):
 
 
 async def analyze_page(text: str, title: str, url: str, country_name: str,
-                       is_marketplace: bool = False):
+                       is_marketplace: bool = False, links=None):
     """Geeft een LIJST van aanbiedingen terug (0..N). Voor marktplaatsen meerdere."""
     provider = os.environ.get("LLM_PROVIDER", "ollama").lower()
     max_items = 8 if is_marketplace else 1
-    prompt = _build_prompt(text, title, url, country_name, is_marketplace, max_items)
+    prompt = _build_prompt(text, title, url, country_name, is_marketplace, max_items, links)
     try:
         if provider in ("lmstudio", "openai", "local", "ollama"):
             raw = await _analyze_openai_compatible(prompt)
@@ -2039,7 +2087,8 @@ async def perform_scan(db, settings: dict, run_id: str):
                 continue
             
             is_mp = any(m in url.lower() for m in MARKETPLACE_DOMAINS)
-            items = await analyze_page(page["text"], page["title"], url, c["name"], is_mp)
+            items = await analyze_page(page["text"], page["title"], url, c["name"], is_mp,
+                                       page.get("links"))
             stats["analyzed"] += 1
             if not items:
                 # Bepaal reden waarom geen items gevonden
@@ -2083,10 +2132,9 @@ async def perform_scan(db, settings: dict, run_id: str):
                 label, toelichting = market_conformity(price_eur, a.get("chip"),
                                                        a.get("conditie"), reference_prices)
                 
-                # Directe advertentie URL (voorkeur boven de oorspronkelijke URL)
-                advertentie_url = (a.get("advertentie_url") or "").strip()
-                if not advertentie_url:
-                    advertentie_url = url
+                # Directe advertentie URL — alleen als die echt op de pagina stond
+                advertentie_url = _resolve_listing_url(a.get("advertentie_url"), url,
+                                                       page.get("links"))
                 
                 listing = {
                     "id": str(uuid.uuid4()),
