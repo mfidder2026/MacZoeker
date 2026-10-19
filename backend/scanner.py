@@ -6,6 +6,8 @@ import json
 import uuid
 import logging
 import asyncio
+import socket
+import ssl
 from itertools import zip_longest
 from datetime import datetime, timezone
 from urllib.parse import urlparse, parse_qs, unquote, urljoin
@@ -243,7 +245,7 @@ MARKETPLACE_SEED_URLS = {
     ],
     "PT": [
         "https://www.olx.pt/ads/q-mac-studio/",
-        "https://www.custojusto.pt/anuncios?q=mac%20studio",
+        "https://www.custojusto.pt/portugal/q/mac+studio",
     ],
     "CH": [
         "https://www.ricardo.ch/de/s/mac%20studio",
@@ -265,12 +267,11 @@ MARKETPLACE_SEED_URLS = {
         "https://www.finn.no/bap/forsale/search.html?q=mac%20studio",
     ],
     "FI": [
-        "https://www.tori.fi/koko_suomi?q=mac%20studio",
+        "https://www.tori.fi/recommerce/forsale/search?q=mac+studio",
     ],
     "AE": [
         "https://www.amazon.ae/s?k=mac+studio",
-        "https://www.noa.ae/en/apple-mac-studio",
-        "https://www.jarir.com/app/search?searchTerm=mac+studio",
+        "https://www.jarir.com/ae-en/catalogsearch/result?search=mac+studio",
     ],
     "US": [
         "https://www.amazon.com/s?k=mac+studio",
@@ -280,7 +281,6 @@ MARKETPLACE_SEED_URLS = {
     "CA": [
         "https://www.amazon.ca/s?k=mac+studio",
         "https://www.bestbuy.ca/en-ca/search?searchTerm=mac+studio",
-        "https://www.costco.com/apple-mac-studio.product.100745831.html",
     ],
     "AU": [
         "https://www.amazon.com.au/s?k=mac+studio",
@@ -289,65 +289,63 @@ MARKETPLACE_SEED_URLS = {
     ],
     "SG": [
         "https://www.amazon.sg/s?k=mac+studio",
-        "https://www.challenger.com.sg/search?search=mac+studio",
-        "https://www.harveynorman.com.sg/search?q=mac+studio",
     ],
     "JP": [
         "https://www.amazon.co.jp/s?k=mac+studio",
-        "https://www.yodobashi.com/product/100000000000000000/",
-        "https://www.edion.com/search/search?q=mac+studio",
     ],
     "HK": [
         "https://www.amazon.com.hk/s?k=mac+studio",
-        "https://www.eprice.com.hk/mac-studio/",
-        "https://www.wilkinson.com.hk/search?q=mac+studio",
+        "https://www.eprice.com.hk/search/?q=mac+studio",
     ],
     "NZ": [
         "https://www.amazon.co.nz/s?k=mac+studio",
-        "https://www.harveynorman.co.nz/mac-studio.html",
-        "https://www.xpert.co.nz/search?q=mac+studio",
     ],
     "CZ": [
-        "https://www.czc.cz/mac-studio",
-        "https://www.mironet.cz/vyhlavani.htm?qs=mac+studio",
         "https://www.alza.cz/mac-studio-d2333.htm",
+        "https://istyle.cz/collections/mac-studio",
+        "https://www.datart.cz/vyhledavani?q=mac+studio",
     ],
     "HU": [
         "https://www.alza.hu/mac-studio",
-        "https://www.emag.hu/mac-studio",
+        "https://www.emag.hu/search/mac%20studio",
     ],
     "RO": [
-        "https://www.emag.ro/mac-studio",
+        "https://www.emag.ro/search/mac%20studio",
         "https://www.flanco.ro/mac-studio",
     ],
     "SK": [
         "https://www.alza.sk/mac-studio",
-        "https://www.saturn.sk/mac-studio",
+        "https://istyle.sk/collections/mac-studio",
     ],
     "SI": [
-        "https://www.bolt.si/iskanje?search=mac%20studio",
+        "https://www.bigbang.si/iskanje/?q=mac+studio",
+        "https://www.mimovrste.com/iskanje?s=mac+studio",
+        "https://istyle.si/collections/mac-studio",
     ],
     "HR": [
-        "https://www.ingressa.hr/mac-studio",
+        "https://www.links.hr/hr/search?q=mac+studio",
+        "https://istyle.hr/collections/mac-studio",
     ],
     "BG": [
-        "https://www.technopolis.bg/mac-studio",
-        "https://www.johnibuilders.com/search?q=mac+studio",
+        "https://www.technopolis.bg/bg/search/?query=mac+studio",
+        "https://istyle.bg/collections/mac-studio",
     ],
     "EE": [
-        "https://www.arvutikeskus.ee/search?query=mac+studio",
+        "https://arvutitark.ee/otsing?q=mac+studio",
     ],
     "LV": [
-        "https://www.riga24.lv/meket?query=mac+studio",
+        "https://www.euronics.lv/meklet?q=mac+studio",
+        "https://www.rdveikals.lv/search/lv/word/mac+studio/",
+        "https://www.1a.lv/search?q=mac+studio",
     ],
     "LT": [
         "https://www.pigu.lt/ie/keywords/mac%20studio",
     ],
     "MT": [
-        "https://www.iway.com.mt/search?q=mac+studio",
+        "https://www.scanmalta.com/shop/catalogsearch/result/?q=mac+studio",
     ],
     "CY": [
-        "https://www.goodmall.cy/search?q=mac+studio",
+        "https://www.public.cy/search?text=mac+studio",
     ],
 }
 
@@ -356,25 +354,19 @@ MARKETPLACE_SEED_URLS = {
 SEED_URLS = {
     "NL": [
         "https://www.amac.nl/mac/mac-studio",
-        "https://www.yourmacstore.nl/mac/mac-studio/merk-apple/",
+        "https://www.yourmacstore.nl/mac/mac-studio/",
         "https://mactastic.nl/refurbished-mac-kopen/mac-studio-kopen/",
         "https://www.macvoorminder.nl/mac/mac-studio",
         "https://www.coolblue.nl/desktops/apple/apple-mac-studio",
-        "https://www.belsimpel.nl/apple/mac-studio",
         "https://www.bol.com/nl/nl/s/?searchtext=mac%20studio",
         "https://galaxus.nl/nl/supersite/search?componentId=1057&term=mac+studio",
         "https://azerty.nl/product-search?q=mac+studio",
         "https://www.cameranu.nl/nl/zoeken?q=mac+studio",
-        "https://www.gsmshop.nl/mac-studio/",
-        "https://www.mac-center.nl/mac-studio/",
-        "https://www.vanrooy.com/nl/search/?text=Mac%20Studio",
     ],
     "BE": [
         "https://www.coolblue.be/nl/apple-mac-studio",
         "https://www.mediamarkt.be/nl/category/mac-studio",
-        "https://www.switch.be/nl/mac/mac-studio",
         "https://www.lab9.be/nl/mac/mac-studio",
-        "https://www.vandenborre.be/zoeken?q=mac%20studio",
     ],
     "DE": [
         "https://www.mactrade.de/mac/mac-studio/",
@@ -384,23 +376,19 @@ SEED_URLS = {
         "https://www.cyberport.de/apple/mac/mac-studio.html",
         "https://www.mstore.de/mac/mac-studio",
         "https://www.notebooksbilliger.de/apple+mac+studio",
-        "https://www.rebuy.de/kaufen/suche?q=mac+studio",
+        "https://www.rebuy.de/kaufen/suchen?q=mac+studio",
         "https://www.conrad.de/search?query=Mac%20Studio",
-        "https://www.techfinder.at/search/mac-studio",
-        "https://www.digitec.ch/de/s1/producttype/mac-studio",
     ],
     "FR": [
         "https://www.ldlc.com/recherche/Mac%20Studio/",
         "https://www.materiel.net/imac-et-mac-mini/l403/",
         "https://www.fnac.com/Apple-Mac-Studio/",
-        "https://www.boulanger.com/c/mac-studio",
+        "https://www.boulanger.com/resultats?tr=mac+studio",
         "https://www.darty.com/nav/recherche?text=mac+studio",
-        "https://www.macway.com/mac/mac-studio.html",
         "https://www.cdiscount.com/search/10/mac+studio.html",
     ],
     "ES": [
         "https://www.k-tuin.com/comprar-un-mac/mac-studio",
-        "https://www.macnificos.com/mac-studio",
         "https://www.pccomponentes.com/mac-studio",
         "https://www.mediamarkt.es/es/search.html?query=mac%20studio",
         "https://www.elcorteingles.es/search/?s=mac%20studio",
@@ -408,31 +396,26 @@ SEED_URLS = {
     "IT": [
         "https://www.amazon.it/s?k=mac+studio",
         "https://www.unieuro.it/online/search?q=mac+studio",
-        "https://www.euronics.it/ricerca?q=mac+studio",
-        "https://www.buffetti.it/catalogsearch/result/?q=mac+studio",
+        "https://www.euronics.it/search?q=mac+studio",
     ],
     "GB": [
         "https://www.krcs.co.uk/mac-studio",
-        "https://www.stormfront.co.uk/mac-studio",
         "https://www.johnlewis.com/search?search-term=mac%20studio",
         "https://www.currys.co.uk/search?q=mac%20studio",
         "https://www.very.co.uk/e/q/mac-studio.end",
         "https://www.box.co.uk/search?search=mac%20studio",
-        "https://cancomuk.com/search?q=mac%20studio",
     ],
     "AT": [
         "https://www.mediamarkt.at/de/category/mac-studio",
         "https://www.mcshark.at/mac/mac-studio",
-        "https://www.e-tec.at/search.php?query=mac%20studio",
         "https://www.geizhals.at/?fs=mac+studio",
     ],
     "IE": [
-        "https://www.compub.com/mac/mac-studio",
         "https://www.harveynorman.ie/search/?q=mac%20studio",
         "https://www.currys.ie/search?q=mac%20studio",
     ],
     "PT": [
-        "https://www.worten.pt/produtos/informatica/mac/mac-studio",
+        "https://www.worten.pt/search?query=mac%20studio",
         "https://www.fnac.pt/Mac-Studio/",
         "https://www.mediamarkt.pt/pt/search.html?query=mac%20studio",
     ],
@@ -442,10 +425,10 @@ SEED_URLS = {
         "https://www.power.fi/haku/?q=mac%20studio",
     ],
     "LU": [
-        "https://www.mediamarkt.lu/fr/search.html?query=mac%20studio",
+        "https://www.apple.com/lu/shop/buy-mac/mac-studio",
     ],
     "CH": [
-        "https://www.digitec.ch/en/s1/producttype/mac-studio",
+        "https://www.digitec.ch/en/search?q=mac%20studio",
         "https://www.microspot.ch/de/search?q=mac%20studio",
         "https://www.brack.ch/search?query=mac%20studio",
         "https://www.interdiscount.ch/de/search?q=mac%20studio",
@@ -457,7 +440,7 @@ SEED_URLS = {
         "https://www.kjell.com/se/sok?query=mac+studio",
     ],
     "DK": [
-        "https://www.humac.dk/mac/mac-studio",
+        "https://www.humac.dk/mac-studio",
         "https://www.elgiganten.dk/search?SearchTerm=mac%20studio",
         "https://www.proshop.dk/Search?q=mac%20studio",
     ],
@@ -471,143 +454,98 @@ SEED_URLS = {
         "https://www.elkjop.no/search?SearchTerm=mac%20studio",
         "https://www.komplett.no/search?q=mac%20studio",
         "https://www.power.no/search/?q=mac%20studio",
-        "https://www.eplehuset.no/sok?q=mac%20studio",
+        "https://www.eplehuset.no/search?q=mac+studio",
     ],
     "AE": [
         # Reguliere webshops & officiële resellers
-        "https://www.noa.ae/en/apple-mac-studio",
-        "https://www.jarir.com/app/search?searchTerm=mac+studio",
-        "https://www.magnus.com/search?query=mac+studio",
-        "https://www.miraclesignals.com/mac-studio",
-        "https://www.emax.com/en/search/mac-studio",
-        "https://www.jumia.ae/apple-mac-studio/",
+        "https://www.jarir.com/ae-en/catalogsearch/result?search=mac+studio",
+        "https://www.emaxme.com/catalogsearch/result/?q=mac+studio",
         "https://www.noon.com/middle-east/north-region/s/n-no-mac-studio/",
         "https://www.amazon.ae/s?k=mac+studio",
-        "https://www.currys.co.uk/search?q=mac+studio",
-        "https://www.havells.com/ae/en/search?query=mac+studio",
         # Marktplaats-achtige platforms
-        "https://www.facebook.com/marketplace/dubai/desk/?for=900000016471",
         "https://www.dubizzle.com/search/mac%20studio",
-        "https://www.dubzz.com/mac-studio",
-        "https://www.dubai-sell.com/mac-studio",
     ],
     # === Nieuwe landen ===
     "US": [
         "https://www.apple.com/shop/buy-mac/mac-studio",
         "https://www.amazon.com/s?k=mac+studio",
         "https://www.bestbuy.com/site/searchpage.jsp?st=mac+studio",
-        "https://www.bhphotofinding.com/finder?s=mac+studio",
+        "https://www.bhphotovideo.com/c/search?q=mac%20studio",
         "https://www.newegg.com/ppl?st=mac+studio",
-        "https://www.costco.com/apple-mac-studio.product.100745831.html",
         "https://www.apple.com/shop/refurbished",
     ],
     "CA": [
         "https://www.apple.com/ca/shop/buy-mac/mac-studio",
         "https://www.amazon.ca/s?k=mac+studio",
         "https://www.bestbuy.ca/en-ca/search?searchTerm=mac+studio",
-        "https://www.costco.com/apple-mac-studio.product.100745831.html",
-        "https://www.hudsons.com/mac-studio",
-        "https://www.applemac.ca/mac-studio",
     ],
     "AU": [
         "https://www.apple.com/au/shop/buy-mac/mac-studio",
         "https://www.amazon.com.au/s?k=mac+studio",
         "https://www.harveynorman.com.au/mac-studio.html",
         "https://www.jbhifi.com.au/search?q=mac+studio",
-        "https://www.pccomputers.com/mac-studio",
         "https://www.scorptec.com.au/search?q=mac+studio",
     ],
     "SG": [
         "https://www.apple.com/sg/shop/buy-mac/mac-studio",
         "https://www.amazon.sg/s?k=mac+studio",
-        "https://www.challenger.com.sg/search?search=mac+studio",
-        "https://www.harveynorman.com.sg/search?q=mac+studio",
-        "https://www.extraclear.com.sg/search?q=mac+studio",
-        "https://www.iifuture.com/search?q=mac+studio",
     ],
     "JP": [
         "https://www.apple.com/jp/shop/buy-mac/mac-studio",
         "https://www.amazon.co.jp/s?k=mac+studio",
         "https://www.yodobashi.com/product/category/?search=Mac+Studio",
-        "https://www.edion.com/search/search?q=mac+studio",
-        "https://www.kojincomputer.jp/search?keywords=mac+studio",
     ],
     "HK": [
-        "https://www.apple.com/hk/en/shop/buy-mac/mac-studio",
+        "https://www.apple.com/hk/shop/buy-mac/mac-studio",
         "https://www.amazon.com.hk/s?k=mac+studio",
         "https://www.eprice.com.hk/search/?q=mac+studio",
-        "https://www.wilkinson.com.hk/search?q=mac+studio",
     ],
     "NZ": [
         "https://www.apple.com/nz/shop/buy-mac/mac-studio",
         "https://www.amazon.co.nz/s?k=mac+studio",
-        "https://www.harveynorman.co.nz/mac-studio.html",
-        "https://www.xpert.co.nz/search?q=mac+studio",
-        "https://www.stuff.co.nz/search?query=mac+studio",
     ],
     "CZ": [
         "https://www.apple.com/cz/shop/buy-mac/mac-studio",
         "https://www.alza.cz/mac-studio-d2333.htm",
-        "https://www.czc.cz/mac-studio",
-        "https://www.mironet.cz/vyhlavani.htm?qs=mac+studio",
-        "https://www.mall.cz/mac-studio",
     ],
     "HU": [
         "https://www.apple.com/hu/shop/buy-mac/mac-studio",
         "https://www.alza.hu/mac-studio",
-        "https://www.emag.hu/mac-studio",
-        "https://www.invertor.hu/keres?query=mac+studio",
+        "https://www.emag.hu/search/mac%20studio",
     ],
     "RO": [
-        "https://www.apple.com/ro/shop/buy-mac/mac-studio",
-        "https://www.emag.ro/mac-studio",
+        "https://www.emag.ro/search/mac%20studio",
         "https://www.flanco.ro/mac-studio",
         "https://www.evo.ro/mac-studio",
+        "https://istyle.ro/collections/mac-studio",
     ],
     "SK": [
-        "https://www.apple.com/sk/shop/buy-mac/mac-studio",
         "https://www.alza.sk/mac-studio",
-        "https://www.saturn.sk/mac-studio",
-        "https://www.mall.sk/mac-studio",
     ],
     "SI": [
-        "https://www.apple.com/si/shop/buy-mac/mac-studio",
-        "https://www.bolt.si/iskanje?search=mac%20studio",
-        "https://www.spar.si/iskanje?search=mac+studio",
+        "https://www.bigbang.si/iskanje/?q=mac+studio",
     ],
     "HR": [
-        "https://www.apple.com/hr/hr/shop/buy-mac/mac-studio",
-        "https://www.ingressa.hr/mac-studio",
-        "https://www.plivnica.hr/mac-studio",
+        "https://www.links.hr/hr/search?q=mac+studio",
     ],
     "BG": [
-        "https://www.apple.com/bg/bg/shop/buy-mac/mac-studio",
-        "https://www.technopolis.bg/mac-studio",
-        "https://www.johnibuilders.com/search?q=mac+studio",
-        "https://www.imaginatio.bg/search?q=mac+studio",
+        "https://www.technopolis.bg/bg/search/?query=mac+studio",
     ],
     "EE": [
-        "https://www.apple.com/ee/en/shop/buy-mac/mac-studio",
-        "https://www.arvutikeskus.ee/search?query=mac+studio",
-        "https://www2.arvutitark.ee/search?query=mac+studio",
+        "https://arvutitark.ee/otsing?q=mac+studio",
     ],
     "LV": [
-        "https://www.apple.com/lv/en/shop/buy-mac/mac-studio",
-        "https://www.riga24.lv/meket?query=mac+studio",
-        "https://www.tirgus360.lv/mekets?query=mac+studio",
+        "https://www.euronics.lv/meklet?q=mac+studio",
     ],
     "LT": [
-        "https://www.apple.com/lt/en/shop/buy-mac/mac-studio",
         "https://www.pigu.lt/ie/keywords/mac%20studio",
         "https://www.varle.lt/search?query=mac+studio",
     ],
     "MT": [
-        "https://www.apple.com/mt/en/shop/buy-mac/mac-studio",
-        "https://www.iway.com.mt/search?q=mac+studio",
+        "https://www.scanmalta.com/shop/catalogsearch/result/?q=mac+studio",
     ],
     "CY": [
-        "https://www.apple.com/cy/en/shop/buy-mac/mac-studio",
-        "https://www.goodmall.cy/search?q=mac+studio",
+        "https://www.public.cy/search?text=mac+studio",
     ],
 }
 
@@ -630,6 +568,15 @@ def _is_useful(url: str, include_marketplaces: bool):
     return True
 
 
+# ddgs-backends: 'auto' zet Wikipedia altijd op één van de twee parallelle plekken (nutteloos
+# voor winkels) en mojeek gaf op Railway vooral timeouts — daarom een vaste lijst zonder die twee.
+DDGS_BACKEND = os.environ.get("DDGS_BACKEND", "google,bing,brave,yahoo,duckduckgo,mullvad_leta")
+DDGS_TIMEOUT = int(os.environ.get("DDGS_TIMEOUT", "5"))
+# Hoeveel landen tegelijk gezocht worden en hoeveel pagina's tegelijk worden opgehaald/geanalyseerd.
+SEARCH_CONCURRENCY = int(os.environ.get("SEARCH_CONCURRENCY", "4"))
+PAGE_CONCURRENCY = int(os.environ.get("PAGE_CONCURRENCY", "4"))
+
+
 def _ddgs_search(term: str, region: str, max_results: int):
     """Synchrone ddgs-zoekopdracht (in thread aangeroepen)."""
     try:
@@ -639,7 +586,8 @@ def _ddgs_search(term: str, region: str, max_results: int):
         return []
     for reg in [region, "wt-wt"]:
         try:
-            res = DDGS().text(term, region=reg, max_results=max_results)
+            res = DDGS(timeout=DDGS_TIMEOUT).text(term, region=reg, max_results=max_results,
+                                                  backend=DDGS_BACKEND)
             urls = [r.get("href") for r in res if (r.get("href") or "").startswith("http")]
             if urls:
                 return urls
@@ -656,7 +604,7 @@ async def ddg_html_search(client: httpx.AsyncClient, query: str, max_results: in
             "https://html.duckduckgo.com/html/",
             data={"q": query},
             headers={"User-Agent": USER_AGENT},
-            timeout=15,
+            timeout=10,
         )
         soup = BeautifulSoup(resp.text, "html.parser")
         for a in soup.select("a.result__a"):
@@ -1551,8 +1499,45 @@ async def _fetch_selenium(url: str, country_code=None):
             driver.quit()
 
 
+# Statussen die fetch_page naast "ok" kan teruggeven, met de reden voor rapport/dashboard.
+FETCH_REASONS = {
+    "blocked": "Anti-bot bescherming (403/429/challenge)",
+    "empty": "Onvoldoende content (<200 tekens)",
+    "not_found": "Niet gevonden (404)",
+    "dns": "Netwerkfout: domein onbekend (DNS)",
+    "network": "Netwerkfout/timeout",
+    "ssl": "SSL-fout (ongeldig/verlopen certificaat)",
+    "http_error": "HTTP-fout van de server",
+}
+
+_DNS_PHRASES = ("name or service not known", "nodename nor servname", "name resolution",
+                "getaddrinfo failed", "no address associated")
+
+
+def _classify_error(exc) -> str:
+    """Bepaal of een request-exceptie een SSL-, DNS- of overige netwerkfout is."""
+    seen, cur = set(), exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        msg = str(cur).lower()
+        if isinstance(cur, ssl.SSLError) or "certificate_verify_failed" in msg or "[ssl" in msg:
+            return "ssl"
+        if isinstance(cur, socket.gaierror) or any(p in msg for p in _DNS_PHRASES):
+            return "dns"
+        cur = cur.__cause__ or cur.__context__
+    return "network"
+
+
+def _is_definitive_error(exc, kind) -> bool:
+    """True als opnieuw proberen (andere UA, browser) geen zin heeft: de host is niet
+    bereikbaar of het certificaat is ongeldig. Een trage server (ReadTimeout) wel opnieuw."""
+    return kind in ("ssl", "dns") or isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout))
+
+
 async def _fetch_with_extended_retries(client, url: str, country_code=None):
-    """Uitgebreide HTTP retries met verschillende headers en delays."""
+    """Uitgebreide HTTP retries met verschillende headers en delays.
+
+    Geeft (status, data) terug wanneer er een definitief antwoord is, anders None."""
     domain = urlparse(url).netloc.replace("www.", "")
     
     # Probeer met verschillende user-agents en delays
@@ -1571,26 +1556,28 @@ async def _fetch_with_extended_retries(client, url: str, country_code=None):
                 timeout=20,
                 follow_redirects=True
             )
-            
-            if resp.status_code == 200:
-                data = await asyncio.to_thread(_parse_html, resp.text, str(resp.url))
-                result = _classify_page(data)
-                if result[0] == "ok":
-                    logger.info(f"Extended retry succesvol (attempt {i+1}) voor {domain}")
-                    return result
-                if result[0] == "blocked":
-                    continue
-                return result
-            elif resp.status_code == 403:
-                logger.info(f"Extended retry 403 (attempt {i+1}) voor {domain}")
-                continue
-            else:
-                return ("blocked", None)
-                
         except Exception as e:
-            error_type = type(e).__name__
-            logger.info(f"Extended retry mislukt (attempt {i+1}, {error_type}) voor {domain}")
+            kind = _classify_error(e)
+            logger.info(f"Extended retry mislukt (attempt {i+1}, {type(e).__name__}) voor {domain}")
+            if _is_definitive_error(e, kind):
+                return (kind, None)
             continue
+
+        if resp.status_code == 200:
+            data = await asyncio.to_thread(_parse_html, resp.text, str(resp.url))
+            result = _classify_page(data)
+            if result[0] == "ok":
+                logger.info(f"Extended retry succesvol (attempt {i+1}) voor {domain}")
+                return result
+            if result[0] == "blocked":
+                continue
+            return result
+        if resp.status_code in (403, 429):
+            logger.info(f"Extended retry {resp.status_code} (attempt {i+1}) voor {domain}")
+            continue
+        if resp.status_code in (404, 410):
+            return ("not_found", None)
+        return ("http_error", None)
     
     return None  # Geen van de retries werkte
 
@@ -1604,48 +1591,61 @@ async def fetch_page(client: httpx.AsyncClient, url: str, country_code=None, bro
     3. Playwright (indien beschikbaar)
     4. Playwright stealth modus
     5. Selenium fallback (indien geïnstalleerd)
-    
-    Geeft (status, data) terug: status in {ok, blocked, empty, error}.
+
+    404/410, SSL- en DNS/connect-fouten zijn definitief: dan geen retries of browser.
+    Geeft (status, data) terug: status "ok" of een sleutel uit FETCH_REASONS.
     """
     domain = urlparse(url).netloc.replace("www.", "")
     
     # ---- Layer 1: Direct HTTP request ----
     last_status = None
+    failure = None  # beste verklaring tot nu toe waarom het niet lukte
     for attempt in range(2):
         ua = UA_POOL[attempt % len(UA_POOL)]
         try:
             resp = await client.get(url, headers=browser_headers(country_code, ua),
                                     timeout=15, follow_redirects=True)
-            last_status = resp.status_code
-            
-            if resp.status_code == 403:
-                logger.info(f"403 Forbidden (WAF) voor {domain}")
-                break
-            elif resp.status_code == 429:
-                logger.info(f"429 Rate limit voor {domain}")
-                await asyncio.sleep(2)
-                continue
-            elif resp.status_code == 503:
-                logger.info(f"503 Service unavailable voor {domain}")
-                await asyncio.sleep(1.5)
-                continue
-            elif resp.status_code >= 400:
-                logger.info(f"HTTP {resp.status_code} voor {domain}")
-                break
-            
-            data = await asyncio.to_thread(_parse_html, resp.text, str(resp.url))
-            result = _classify_page(data)
-            if result[0] == "ok":
-                return result
-            if result[0] == "blocked":
-                logger.info(f"Challenge-pagina (anti-bot) voor {domain}")
-            else:
-                logger.info(f"LEGE content ({len(data['text'] if data else 0)} chars) voor {domain}")
-            break
         except Exception as e:
-            error_type = type(e).__name__
-            logger.warning(f"Netwerkfout voor {domain} ({error_type}): {e}")
+            kind = _classify_error(e)
+            logger.warning(f"Netwerkfout voor {domain} ({type(e).__name__}, {kind}): {e}")
+            if _is_definitive_error(e, kind):
+                return (kind, None)
+            failure = kind
             break
+        last_status = resp.status_code
+        
+        if resp.status_code in (404, 410):
+            logger.info(f"HTTP {resp.status_code} (niet gevonden) voor {domain}")
+            return ("not_found", None)
+        elif resp.status_code == 403:
+            logger.info(f"403 Forbidden (WAF) voor {domain}")
+            failure = "blocked"
+            break
+        elif resp.status_code == 429:
+            logger.info(f"429 Rate limit voor {domain}")
+            failure = "blocked"
+            await asyncio.sleep(2)
+            continue
+        elif resp.status_code == 503:
+            logger.info(f"503 Service unavailable voor {domain}")
+            failure = "http_error"
+            await asyncio.sleep(1.5)
+            continue
+        elif resp.status_code >= 400:
+            logger.info(f"HTTP {resp.status_code} voor {domain}")
+            failure = "http_error"
+            break
+        
+        data = await asyncio.to_thread(_parse_html, resp.text, str(resp.url))
+        result = _classify_page(data)
+        if result[0] == "ok":
+            return result
+        failure = result[0]
+        if result[0] == "blocked":
+            logger.info(f"Challenge-pagina (anti-bot) voor {domain}")
+        else:
+            logger.info(f"LEGE content ({len(data['text'] if data else 0)} chars) voor {domain}")
+        break
     
     # ---- Layer 2: Uitgebreide HTTP retries ----
     logger.info(f"Extended HTTP retries voor {domain} (HTTP {last_status})")
@@ -1671,11 +1671,12 @@ async def fetch_page(client: httpx.AsyncClient, url: str, country_code=None, bro
     if os.environ.get("USE_SELENIUM", "true").lower() in ("1", "true", "yes"):
         logger.info(f"Selenium fallback proberen voor {domain}")
         result = await _fetch_selenium(url, country_code)
-        if result:
+        if result and (result[0] == "ok" or failure is None):
             return result
     
-    # Alle fallbacks mislukt
-    return ("blocked", None)
+    # Alle fallbacks mislukt: geef de reden uit de HTTP-lagen terug (bv. 'http_error'),
+    # browserfouten zeggen daar niets zinnigs over.
+    return (failure or "blocked", None)
 
 
 # Behoud de originele _fetch_playwright voor backward compatibility
@@ -2367,16 +2368,29 @@ async def perform_scan(db, settings: dict, run_id: str):
             log("💱 Actuele ECB-wisselkoersen geladen.")
         else:
             log("💱 ECB-koersen niet bereikbaar — vaste wisselkoersen gebruikt.")
-        for i, c in enumerate(enabled, 1):
-            await flush("zoeken", f"Zoeken in {c['name']} ({c['code']})…", i, len(enabled))
-            retail = SEED_URLS.get(c["code"], [])
-            mp = MARKETPLACE_SEED_URLS.get(c["code"], []) if include_mp else []
-            urls = await search_urls(client, c, c["term"], max_per_query, include_mp)
-            # interleave winkels + marktplaatsen + zoekresultaten voor eerlijke dekking
-            merged = [x for trio in zip_longest(retail, mp, urls) for x in trio if x]
-            per_country.append([(u, c) for u in merged])
-            log(f"[{c['code']}] {len(urls)} zoekresultaten + {len(retail)} winkels "
-                f"+ {len(mp)} marktplaatsen.")
+        search_sem = asyncio.Semaphore(SEARCH_CONCURRENCY)
+        searched = 0
+
+        async def search_country(c):
+            nonlocal searched
+            async with search_sem:
+                retail = SEED_URLS.get(c["code"], [])
+                mp = MARKETPLACE_SEED_URLS.get(c["code"], []) if include_mp else []
+                try:
+                    urls = await search_urls(client, c, c["term"], max_per_query, include_mp)
+                except Exception as e:  # één land mag de scan niet laten mislukken
+                    log(f"⚠️  [{c['code']}] zoeken mislukt ({type(e).__name__}) — alleen vaste winkels.")
+                    urls = []
+                searched += 1
+                await flush("zoeken", f"Gezocht in {c['name']} ({c['code']})…", searched, len(enabled))
+                log(f"[{c['code']}] {len(urls)} zoekresultaten + {len(retail)} winkels "
+                    f"+ {len(mp)} marktplaatsen.")
+                # interleave winkels + marktplaatsen + zoekresultaten voor eerlijke dekking
+                merged = [x for trio in zip_longest(retail, mp, urls) for x in trio if x]
+                return [(u, c) for u in merged]
+
+        # gather behoudt de landvolgorde; bij annuleren worden alle zoektaken mee geannuleerd
+        per_country = list(await asyncio.gather(*(search_country(c) for c in enabled)))
 
         # round-robin interleaven zodat de cap over alle landen wordt verdeeld
         seen = set()
@@ -2396,31 +2410,42 @@ async def perform_scan(db, settings: dict, run_id: str):
         log(f"{total} unieke kandidaat-pagina's om te analyseren (max {max_pages}).")
         await flush("analyseren", f"{total} pagina's gevonden — start analyse…", 0, total)
 
-        for n, (url, c) in enumerate(uniq, 1):
-            domain = urlparse(url).netloc.replace("www.", "")
-            await flush("analyseren", f"Analyseren van {domain} ({c['code']})", n, total)
+        page_sem = asyncio.Semaphore(PAGE_CONCURRENCY)
+        processed = 0
+
+        async def process_page(url, c):
+            """Haalt één pagina op en analyseert die; geeft de gevonden listings terug."""
+            nonlocal processed
+            async with page_sem:
+                domain = urlparse(url).netloc.replace("www.", "")
+                try:
+                    return await _process_page(url, c, domain)
+                except Exception as e:  # één pagina mag de scan niet laten mislukken
+                    stats["errors"] += 1
+                    log(f"❌ FOUT — {domain}: {type(e).__name__} tijdens analyse")
+                    return []
+                finally:
+                    processed += 1
+                    await flush("analyseren", f"Geanalyseerd: {domain} ({c['code']})", processed, total)
+
+        async def _process_page(url, c, domain):
             status, page = await fetch_page(client, url, c["code"], browser)
-            
-            # Gedetailleerde logging voor waarom pagina's worden overgeslagen
-            if status == "error":
-                stats["errors"] += 1
-                stats["blocked_urls"].append({"url": url, "domain": domain, "reason": "Netwerkfout/timeout"})
-                log(f"❌ FOUT — {domain}: Kan pagina niet ophalen (netwerkfout/timeouts)")
-                continue
-            if status in ("blocked", "empty"):
-                stats["blocked"] += 1
-                if status == "blocked":
-                    stats["blocked_urls"].append({"url": url, "domain": domain, "reason": "Anti-bot bescherming (Cloudflare/Incapsula/etc.)"})
-                    log(f"🚫 GEBLOKKEERD — {domain}: Anti-bot bescherming (Cloudflare/Incapsula/etc.) — Playwright fallback mislukt")
+            if status != "ok":
+                reason = FETCH_REASONS.get(status, status)
+                stats["blocked_urls"].append({"url": url, "domain": domain, "reason": reason})
+                if status in ("blocked", "empty"):
+                    stats["blocked"] += 1
+                    icon = "🚫 GEBLOKKEERD" if status == "blocked" else "🚫 LEEG"
                 else:
-                    stats["blocked_urls"].append({"url": url, "domain": domain, "reason": "Onvoldoende content (<200 tekens)"})
-                    log(f"🚫 LEEG — {domain}: Pagina werd geladen maar had onvoldoende content (<200 tekens)")
-                continue
+                    stats["errors"] += 1
+                    icon = "⏭️  NIET GEVONDEN" if status == "not_found" else "❌ FOUT"
+                log(f"{icon} — {domain}: {reason}")
+                return []
             
             if not _mentions_mac_studio(page):
                 stats["irrelevant"] += 1
                 log(f"⏭️  GEEN PRODUCT — {domain}: Geen Mac Studio op deze pagina (geen LLM-analyse)")
-                continue
+                return []
 
             is_mp = any(m in url.lower() for m in MARKETPLACE_DOMAINS)
             items = await analyze_page(page["text"], page["title"], url, c["name"], is_mp,
@@ -2436,8 +2461,9 @@ async def perform_scan(db, settings: dict, run_id: str):
                     log(f"⏭️  UITVERKOCHT — {domain}: Alle Mac Studio's uitverkocht")
                 else:
                     log(f"⏭️  GEEN RESULTAAT — {domain}: LLM vond geen bruikbaar Mac Studio aanbod")
-                continue
+                return []
 
+            found = []
             for a in items:
                 listing, reden = build_listing(a, page, url, c, run_id, reference_prices, domain)
                 if listing is None:
@@ -2450,9 +2476,16 @@ async def perform_scan(db, settings: dict, run_id: str):
                         f"verzendland={listing['verzend_land_code']}")
                 if a.get("prijs") is not None and listing["prijs_eur"] is None:
                     stats["price_unverified"] += 1  # LLM-prijs niet op de pagina terug te vinden
-                all_listings.append(listing)
+                found.append(listing)
                 stats["available"] += 1
                 log(f"✅ {listing['winkelnaam']} ({c['code']}) — {listing['chip']} — €{listing['prijs_eur']}")
+            return found
+
+        # Een paar pagina's tegelijk; gather houdt de volgorde van uniq aan (deterministische
+        # deduplicatie) en annuleert alle lopende pagina-taken mee wanneer de scan gestopt wordt.
+        results = await asyncio.gather(*(process_page(url, c) for url, c in uniq))
+        for found in results:
+            all_listings.extend(found)
 
         # ---- DEDUPLICATIE ----
         # Verwijder dubbele listings op basis van:
