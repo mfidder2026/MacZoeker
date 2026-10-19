@@ -26,6 +26,28 @@ const MARKT = {
 // Alleen http(s)-links doorlaten; voorkomt javascript:-links uit gescrapete data.
 const safeUrl = (u) => (typeof u === "string" && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
 
+// Leesbare foutmelding uit een FastAPI-validatiefout (422) of andere API-fout.
+const FIELD_LABELS = {
+  recipient_email: "Ontvanger(s)", send_time: "Verzendtijd",
+  max_results_per_query: "Resultaten per zoekopdracht", max_pages_per_run: "Max. pagina's per run",
+  smtp_host: "SMTP-server", smtp_port: "Poort", smtp_user: "Gebruikersnaam",
+  smtp_password: "Wachtwoord", smtp_from: "Afzender", countries: "Landen",
+};
+const apiError = (e) => {
+  const detail = e?.response?.data?.detail;
+  if (Array.isArray(detail) && detail.length) {
+    return detail
+      .map((d) => {
+        const field = (d.loc || []).find((x) => FIELD_LABELS[x]);
+        const msg = String(d.msg || "").replace(/^Value error, /, "");
+        return field ? `${FIELD_LABELS[field]}: ${msg}` : msg;
+      })
+      .join(" · ");
+  }
+  if (typeof detail === "string") return detail;
+  return e?.message || "onbekende fout";
+};
+
 const fmtEur = (v) =>
   v == null ? "—" : "€ " + Number(v).toLocaleString("nl-NL", { maximumFractionDigits: 0 });
 
@@ -248,7 +270,7 @@ function SettingsDialog({ settings, onSaved }) {
       setOpen(false);
       onSaved();
     } catch (e) {
-      toast.error("Opslaan mislukt");
+      toast.error(`Opslaan mislukt — ${apiError(e)}`);
     }
   };
 
@@ -261,7 +283,7 @@ function SettingsDialog({ settings, onSaved }) {
       if (res.sent) toast.success(`Testmail verstuurd — ${res.reason}`);
       else toast.error(`Niet verstuurd — ${res.reason}`);
     } catch (e) {
-      toast.error("Test mislukt");
+      toast.error(`Test mislukt — ${apiError(e)}`);
     } finally {
       setTesting(false);
     }
@@ -288,7 +310,7 @@ function SettingsDialog({ settings, onSaved }) {
         <div className="space-y-6 py-3">
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <Label className="text-sm text-slate-400">Ontvanger e-mail</Label>
+              <Label className="text-sm text-slate-400">Ontvanger(s) e-mail — meerdere scheiden met een komma</Label>
               <Input
                 data-testid="input-recipient"
                 className="mt-2 bg-[#09090b] border-[#27272a] text-white text-base h-10"
@@ -311,6 +333,8 @@ function SettingsDialog({ settings, onSaved }) {
               <Input
                 data-testid="input-maxresults"
                 type="number"
+                min={1}
+                max={50}
                 className="mt-2 bg-[#09090b] border-[#27272a] text-white text-base h-10"
                 value={form.max_results_per_query}
                 onChange={(e) => setForm({ ...form, max_results_per_query: e.target.value })}
@@ -321,6 +345,8 @@ function SettingsDialog({ settings, onSaved }) {
               <Input
                 data-testid="input-maxpages"
                 type="number"
+                min={1}
+                max={1000}
                 className="mt-2 bg-[#09090b] border-[#27272a] text-white text-base h-10"
                 value={form.max_pages_per_run}
                 onChange={(e) => setForm({ ...form, max_pages_per_run: e.target.value })}

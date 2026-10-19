@@ -214,3 +214,47 @@ def test_refresh_fx_rates_keeps_fallback_on_garbage(monkeypatch):
     monkeypatch.setattr(scanner, "_fx_rates", dict(scanner.FX_TO_EUR))
     assert asyncio.run(scanner.refresh_fx_rates(_Client("<html>storing</html>"))) is False
     assert scanner._fx_rates == scanner.FX_TO_EUR
+
+
+# ---------------------------------------------------------------------------
+# Instellingen: meerdere ontvangers, tijd met seconden, duidelijke fouten
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("raw,expected", [
+    ("a@b.nl", "a@b.nl"),
+    ("a@b.nl, c@d.nl", "a@b.nl, c@d.nl"),
+    ("a@b.nl;c@d.nl;", "a@b.nl, c@d.nl"),
+    ("", ""),
+])
+def test_recipients_accepted_and_normalized(raw, expected):
+    assert server.SettingsUpdate(recipient_email=raw).recipient_email == expected
+
+
+def test_invalid_recipient_names_the_address():
+    with pytest.raises(Exception) as exc:
+        server.SettingsUpdate(recipient_email="a@b.nl, fout-adres")
+    assert "fout-adres" in str(exc.value)
+
+
+@pytest.mark.parametrize("raw,expected", [("08:00", "08:00"), ("8:05", "08:05"), ("08:00:00", "08:00")])
+def test_send_time_normalized(raw, expected):
+    assert server.SettingsUpdate(send_time=raw).send_time == expected
+
+
+def test_send_email_to_multiple_recipients(monkeypatch):
+    import report
+    sent = {}
+
+    class FakeSMTP:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def ehlo(self): pass
+        def starttls(self, **k): pass
+        def login(self, *a): pass
+        def sendmail(self, frm, to, msg): sent["to"] = to
+
+    monkeypatch.setattr(report.smtplib, "SMTP", FakeSMTP)
+    res = report.send_email("s", "<p>x</p>", "a@b.nl; c@d.nl",
+                            {"smtp_host": "smtp.example", "smtp_port": "587", "smtp_from": "x@y.nl"})
+    assert res["sent"] is True
+    assert sent["to"] == ["a@b.nl", "c@d.nl"]

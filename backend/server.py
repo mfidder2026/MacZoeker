@@ -9,8 +9,9 @@ import secrets
 import logging
 import uuid
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-from typing import Dict, List, Literal, Optional, Union
+from email_validator import EmailNotValidError, validate_email
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Dict, List, Optional
 from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -244,8 +245,8 @@ class CountryIn(BaseModel):
 
 class SettingsUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    recipient_email: Optional[Union[EmailStr, Literal[""]]] = None
-    send_time: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    recipient_email: Optional[str] = Field(None, max_length=500)
+    send_time: Optional[str] = None
     max_results_per_query: Optional[int] = Field(None, ge=1, le=50)
     max_pages_per_run: Optional[int] = Field(None, ge=1, le=1000)
     include_marketplaces: Optional[bool] = None
@@ -257,6 +258,31 @@ class SettingsUpdate(BaseModel):
     smtp_user: Optional[str] = Field(None, max_length=255)
     smtp_password: Optional[str] = Field(None, max_length=255)
     smtp_from: Optional[str] = Field(None, max_length=255)
+
+    @field_validator("recipient_email")
+    @classmethod
+    def _valid_recipients(cls, v):
+        """Eén of meer adressen, gescheiden door komma of puntkomma; leeg mag."""
+        if v is None:
+            return v
+        adressen = [a.strip() for a in re.split(r"[,;]", v) if a.strip()]
+        for a in adressen:
+            try:
+                validate_email(a, check_deliverability=False)
+            except EmailNotValidError:
+                raise ValueError(f"'{a}' is geen geldig e-mailadres")
+        return ", ".join(adressen)
+
+    @field_validator("send_time")
+    @classmethod
+    def _valid_time(cls, v):
+        """'HH:MM' (sommige browsers sturen 'HH:MM:SS'); opgeslagen als 'HH:MM'."""
+        if v is None:
+            return v
+        m = re.fullmatch(r"([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?", v.strip())
+        if not m:
+            raise ValueError("gebruik het formaat UU:MM, bv. 08:00")
+        return f"{int(m.group(1)):02d}:{m.group(2)}"
 
     @field_validator("reference_prices")
     @classmethod

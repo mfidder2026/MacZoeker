@@ -1,5 +1,6 @@
 """Genereert het Nederlandstalige e-mailrapport en (optioneel) verzending via SMTP."""
 import os
+import re
 import ssl
 import html as html_lib
 import smtplib
@@ -249,20 +250,21 @@ def send_email(subject, html, recipient, cfg=None):
     user = pick("smtp_user", "SMTP_USER")
     password = pick("smtp_password", "SMTP_PASSWORD")
     sender = pick("smtp_from", "SMTP_FROM") or user
-    if not recipient:
+    recipients = [a.strip() for a in re.split(r"[,;]", recipient or "") if a.strip()]
+    if not recipients:
         return {"sent": False, "reason": "Geen ontvanger ingesteld."}
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = sender
-        msg["To"] = recipient
+        msg["To"] = ", ".join(recipients)
         msg.attach(MIMEText(html, "html"))
         context = ssl.create_default_context()
         if port == 465:
             with smtplib.SMTP_SSL(host, port, timeout=20, context=context) as server:
                 if user:
                     server.login(user, password)
-                server.sendmail(sender, [recipient], msg.as_string())
+                server.sendmail(sender, recipients, msg.as_string())
         else:
             with smtplib.SMTP(host, port, timeout=20) as server:
                 server.ehlo()
@@ -273,8 +275,8 @@ def send_email(subject, html, recipient, cfg=None):
                     pass
                 if user:
                     server.login(user, password)
-                server.sendmail(sender, [recipient], msg.as_string())
-        return {"sent": True, "reason": f"Verzonden naar {recipient}."}
+                server.sendmail(sender, recipients, msg.as_string())
+        return {"sent": True, "reason": f"Verzonden naar {', '.join(recipients)}."}
     except Exception as e:
         logger.error(f"SMTP-verzending mislukt: {e}")
         return {"sent": False, "reason": f"SMTP-fout: {e}"}
