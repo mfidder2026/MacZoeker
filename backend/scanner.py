@@ -1667,11 +1667,12 @@ async def fetch_page(client: httpx.AsyncClient, url: str, country_code=None, bro
         if result[0] == "ok":
             return result
     
-    # ---- Layer 5: Selenium fallback ----
-    logger.info(f"Selenium fallback proberen voor {domain}")
-    result = await _fetch_selenium(url, country_code)
-    if result:
-        return result
+    # ---- Layer 5: Selenium fallback (uit te zetten met USE_SELENIUM=false, bv. op Railway) ----
+    if os.environ.get("USE_SELENIUM", "true").lower() in ("1", "true", "yes"):
+        logger.info(f"Selenium fallback proberen voor {domain}")
+        result = await _fetch_selenium(url, country_code)
+        if result:
+            return result
     
     # Alle fallbacks mislukt
     return ("blocked", None)
