@@ -347,6 +347,11 @@ function SettingsDialog({ settings, onSaved }) {
               {form.smtp_password_set && (
                 <span className="text-emerald-400 block mt-1">Wachtwoord is opgeslagen — laat leeg om te behouden.</span>
               )}
+              {form.smtp_env_configured && (
+                <span className="text-emerald-400 block mt-1">
+                  SMTP is ingesteld via de server (omgevingsvariabelen) — lege velden gebruiken die waarden.
+                </span>
+              )}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 sm:col-span-1">
@@ -404,7 +409,7 @@ function SettingsDialog({ settings, onSaved }) {
             <Button
               data-testid="send-test-email-btn"
               onClick={testSend}
-              disabled={testing || !form.smtp_host}
+              disabled={testing || !(form.smtp_host || form.smtp_env_configured)}
               variant="outline"
               className="mt-4 rounded-full border-[#27272a] bg-transparent text-slate-300 hover:bg-[#18181b] hover:text-white active:scale-95 transition-colors disabled:opacity-50 text-base"
             >

@@ -108,6 +108,8 @@ async def get_settings():
     """Publieke settings — SMTP-wachtwoord gemaskeerd."""
     s = dict(await get_settings_full())
     s["smtp_password_set"] = bool(s.get("smtp_password"))
+    # SMTP kan ook (alleen) via omgevingsvariabelen zijn ingesteld, bv. op Railway
+    s["smtp_env_configured"] = bool(os.environ.get("SMTP_HOST", "").strip())
     s["smtp_password"] = ""
     return s
 
